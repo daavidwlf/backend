@@ -30,12 +30,12 @@ func (server *Server) run() {
 	router := mux.NewRouter()
 
 	/*
-	*	register routes
-	*
-	*	note: apiFunction gets passed through error handling function
-	*	to handle errors locally
-	*
-	 */
+		register routes
+
+		note: api-function gets passed through error handling function
+		to handle errors locally
+
+	*/
 	router.HandleFunc("/bier", handleError(server.getBier))
 
 	fmt.Println("Server: Running and Listening on port: ", server.adress)

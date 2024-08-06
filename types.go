@@ -3,8 +3,8 @@ package main
 import "github.com/google/uuid"
 
 /*
-*	variables must be in CAPTIAL letters otherwise they won't be exported when marashalling json!!!
- */
+	variables must start with CAPITIAL letters otherwise they won't be exported when marashalling json!
+*/
 
 type festival struct {
 	Id   uuid.UUID `json:"id"`

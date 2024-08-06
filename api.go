@@ -5,14 +5,14 @@ import (
 	"net/http"
 )
 
-// interface for api functions
+// type for api functions
 type apiFunction func(http.ResponseWriter, *http.Request) error
 
-// function to write JSON for api functions
+// function to write JSON
 func writeJSON(writer http.ResponseWriter, content any) error {
 	/*
-	*	this order of commands is mandatory!!!
-	 */
+		This order of commands is mandatory!
+	*/
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	return json.NewEncoder(writer).Encode(content)
