@@ -1,2 +1,2 @@
-"make run" und dann yallah
-localhost:3000/bier gibt "Bier" zurück
+"make run" und dann yallah <br>
+localhost:3000/bier
