@@ -1,0 +1,54 @@
+version: '3.7'
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: db_mysql
+    networks:
+      - apiNetwork
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASS}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./volumes/database:/var/lib/mysql
+
+  backend:
+    build: .
+    container_name: app
+    networks:
+      - apiNetwork
+    depends_on:
+      - mysql
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=david
+      - DB_PASS=1234
+      - DB_NAME=database
+    ports:
+      - "${BACKEND_PORT}:8080"
+
+  #used this image instead of the standard one because it supports arm
+  phpmyadmin:
+    image: lscr.io/linuxserver/phpmyadmin:latest
+    container_name: phpmyadmin
+    networks:
+      - apiNetwork
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASS}
+      PUID: 1000
+      PGID: 1000
+      TZ: Etc/UTC
+    ports:
+      - "${PHP_MYADMIN_PORT}:80"
+    depends_on:
+      - mysql
+
+networks:
+  apiNetwork:
+    driver: bridge
