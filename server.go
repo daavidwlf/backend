@@ -40,7 +40,11 @@ func (server *Server) run() {
 	router.HandleFunc("/bier", handleError(server.getBier)).Methods("GET")
 	router.HandleFunc("/register", handleError(server.register)).Methods("POST")
 	router.HandleFunc("/login", handleError(server.login)).Methods("POST")
-	router.HandleFunc("/user/{ID}", handleError(server.getUserID)).Methods("GET")
+
+	/*
+		guarded api routes
+	*/
+	router.HandleFunc("/user/{ID}", JWTAuth(handleError(server.getUserByID))).Methods("GET")
 
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 

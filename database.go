@@ -118,23 +118,24 @@ func registerUser(usr user) error {
 	return err
 }
 
-func loginUser(usr user) error {
+func loginUser(usr user) (string, error) {
 
 	var reqPassword string
+	var usrID string
 
-	err := db.QueryRow(`SELECT Password FROM users where email = ?`, usr.Email).Scan(&reqPassword)
+	err := db.QueryRow(`SELECT UserID, Password FROM users where email = ?`, usr.Email).Scan(&usrID, &reqPassword)
 
 	if err == sql.ErrNoRows {
-		return errors.New("email doesn't exist")
+		return "", errors.New("email doesn't exist")
 	}
 
 	if err != nil {
-		return errors.New("error while logging in" + err.Error())
+		return "", errors.New("error while logging in" + err.Error())
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(reqPassword), []byte(usr.Password))
 
-	return err
+	return usrID, nil
 }
 
 func getUserByID(usrID string) (*user, error) {
