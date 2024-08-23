@@ -8,7 +8,6 @@ import (
 	"os"
 
 	jwt "github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -30,8 +29,6 @@ func parseJSON(request *http.Request, content any) error {
 	if request.Body == nil {
 		return errors.New("body of request is nil")
 	}
-
-	//fmt.Println(io.ReadAll(request.Body))
 
 	return json.NewDecoder(request.Body).Decode(content)
 }
@@ -86,10 +83,10 @@ func validateJWT(tokenString string) (*jwt.Token, error) {
 	})
 }
 
-func createJWT(usr user) (string, error) {
+func createJWT(usrID string) (string, error) {
 	claims := &jwt.MapClaims{
 		"expiresAt": 15000,
-		"userID":    usr.ID,
+		"userID":    usrID,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -106,14 +103,11 @@ func createJWT(usr user) (string, error) {
 */
 
 func (server *Server) getBier(writer http.ResponseWriter, request *http.Request) error {
-	// currentFestival := newFestival("Southside")
-	// return writeJSON(writer, http.StatusOK, currentFestival)
 	return writeJSON(writer, http.StatusOK, "Bier")
 }
 
 func (server *Server) register(writer http.ResponseWriter, request *http.Request) error {
-	//mandatory
-	var userStruct user
+	var userStruct registerUserRequest
 	err := parseJSON(request, &userStruct)
 
 	if err != nil {
@@ -130,7 +124,7 @@ func (server *Server) register(writer http.ResponseWriter, request *http.Request
 }
 
 func (server *Server) login(writer http.ResponseWriter, request *http.Request) error {
-	var usr user
+	var usr loginUserRequest
 	err := parseJSON(request, &usr)
 
 	if err != nil {
@@ -144,13 +138,7 @@ func (server *Server) login(writer http.ResponseWriter, request *http.Request) e
 		return err
 	}
 
-	usr.ID, err = uuid.Parse(usrID)
-
-	if err != nil {
-		return errors.New("error while parsing uuid: " + err.Error())
-	}
-
-	tokenString, err := createJWT(usr)
+	tokenString, err := createJWT(usrID)
 
 	if err != nil {
 		return errors.New("error while creating jwt token uuid: " + err.Error())

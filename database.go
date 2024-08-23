@@ -71,7 +71,7 @@ func connectDB() {
 	fmt.Println("Server: Succesfully connected to Database")
 }
 
-func registerUser(usr user) error {
+func registerUser(usr registerUserRequest) error {
 
 	var mail string
 
@@ -85,16 +85,16 @@ func registerUser(usr user) error {
 		return errors.New("couldn't execute user search in database: " + err.Error())
 	}
 
-	//create props for new user
-	var newID uuid.UUID
+	//create new user
+	var newUser user
 	var IDerr error
-	usr.ID, IDerr = uuid.NewUUID()
+	newUser.ID, IDerr = uuid.NewUUID()
 
 	if IDerr != nil {
 		return errors.New("couldn't generate UUID: " + IDerr.Error())
 	}
 
-	usr.Created = int(time.Now().Unix())
+	newUser.Created = int(time.Now().Unix())
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(usr.Password), bcrypt.DefaultCost)
 
@@ -102,10 +102,14 @@ func registerUser(usr user) error {
 		return errors.New("couldn't hash password: " + err.Error())
 	}
 
-	usr.Password = string(hashedPassword)
+	newUser.Password = string(hashedPassword)
+
+	newUser.Email = usr.Email
+	newUser.FirstName = usr.FirstName
+	newUser.LastName = usr.LastName
 
 	var rows *sql.Rows
-	rows, err = db.Query(`INSERT INTO users (UserID, FirstName, LastName, Email, Password, Created) VALUES (?, ?, ?, ?, ?, ?)`, usr.ID, usr.FirstName, usr.LastName, usr.Email, usr.Password, usr.Created)
+	rows, err = db.Query(`INSERT INTO users (UserID, FirstName, LastName, Email, Password, Created) VALUES (?, ?, ?, ?, ?, ?)`, newUser.ID, newUser.FirstName, newUser.LastName, newUser.Email, newUser.Password, newUser.Created)
 
 	if err != nil {
 		return errors.New("couldn't execute user creation on db: " + err.Error())
@@ -113,17 +117,17 @@ func registerUser(usr user) error {
 
 	defer rows.Close()
 
-	fmt.Println("Server: New user created: ID: ", newID)
+	fmt.Println("Server: New user created: ID: ", newUser.ID)
 
 	return err
 }
 
-func loginUser(usr user) (string, error) {
+func loginUser(usr loginUserRequest) (string, error) {
 
-	var reqPassword string
+	var requiredPassword string
 	var usrID string
 
-	err := db.QueryRow(`SELECT UserID, Password FROM users where email = ?`, usr.Email).Scan(&usrID, &reqPassword)
+	err := db.QueryRow(`SELECT UserID, Password FROM users where email = ?`, usr.Email).Scan(&usrID, &requiredPassword)
 
 	if err == sql.ErrNoRows {
 		return "", errors.New("email doesn't exist")
@@ -133,7 +137,7 @@ func loginUser(usr user) (string, error) {
 		return "", errors.New("error while logging in" + err.Error())
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(reqPassword), []byte(usr.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(usr.Password))
 
 	if err != nil {
 		return "", errors.New("wrong password")
