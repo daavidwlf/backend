@@ -1,7 +1,11 @@
 package main
 
 func main() {
-	server := createServer(":3000")
+
+	//change to env later
+	port := "3000"
+
+	server := createServer(":" + port)
 	connectDB()
 	server.run()
 }
