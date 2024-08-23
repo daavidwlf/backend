@@ -135,6 +135,10 @@ func loginUser(usr user) (string, error) {
 
 	err = bcrypt.CompareHashAndPassword([]byte(reqPassword), []byte(usr.Password))
 
+	if err != nil {
+		return "", errors.New("wrong password")
+	}
+
 	return usrID, nil
 }
 
