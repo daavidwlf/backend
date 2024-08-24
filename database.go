@@ -162,3 +162,27 @@ func getUserByID(usrID string) (*user, error) {
 
 	return &usr, nil
 }
+
+func loginAdmin(adm loginAdminRequest) (string, error) {
+
+	var requiredPassword string
+	var admID string
+
+	err := db.QueryRow(`SELECT AdminID, Password FROM admins where email = ?`, adm.Email).Scan(&admID, &requiredPassword)
+
+	if err == sql.ErrNoRows {
+		return "", errors.New("email doesn't exist")
+	}
+
+	if err != nil {
+		return "", errors.New("error while logging in" + err.Error())
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(adm.Password))
+
+	if err != nil {
+		return "", errors.New("wrong password")
+	}
+
+	return admID, nil
+}

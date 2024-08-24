@@ -23,6 +23,19 @@ type user struct {
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
 	Email     string    `json:"email"`
-	Password  string    `json:"password"`
+	Password  string    `json:"-"`
 	Created   int       `json:"created"`
 }
+
+type loginAdminRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// type admin struct {
+// 	ID       uuid.UUID `json:"id"`
+// 	UserName string    `json:"userName"`
+// 	Email    string    `json:"email"`
+// 	Password string    `json:"-"`
+// 	Created  int       `json:"created"`
+// }

@@ -37,14 +37,21 @@ func (server *Server) run() {
 		to handle errors locally
 
 	*/
-	router.HandleFunc("/bier", handleError(server.getBier)).Methods("GET")
-	router.HandleFunc("/register", handleError(server.register)).Methods("POST")
-	router.HandleFunc("/login", handleError(server.login)).Methods("POST")
+	router.HandleFunc("/bier", handleError(server.handleGetBier)).Methods("GET")
+	router.HandleFunc("/register", handleError(server.handleRegisterUser)).Methods("POST")
+	router.HandleFunc("/login", handleError(server.handleLoginUser)).Methods("POST")
 
 	/*
 		guarded api routes
 	*/
-	router.HandleFunc("/user/{ID}", JWTAuth(handleError(server.getUserByID))).Methods("GET")
+
+	router.HandleFunc("/user/{ID}", JWTAuth(handleError(server.handleGetUserByID))).Methods("GET")
+
+	/*
+		admin routes for dashboard
+	*/
+
+	router.HandleFunc("/admin/login", handleError(server.handleLoginAdmin)).Methods("POST")
 
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 

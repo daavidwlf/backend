@@ -102,11 +102,11 @@ func createJWT(usrID string) (string, error) {
 
 */
 
-func (server *Server) getBier(writer http.ResponseWriter, request *http.Request) error {
+func (server *Server) handleGetBier(writer http.ResponseWriter, request *http.Request) error {
 	return writeJSON(writer, http.StatusOK, "Bier")
 }
 
-func (server *Server) register(writer http.ResponseWriter, request *http.Request) error {
+func (server *Server) handleRegisterUser(writer http.ResponseWriter, request *http.Request) error {
 	var userStruct registerUserRequest
 	err := parseJSON(request, &userStruct)
 
@@ -123,7 +123,7 @@ func (server *Server) register(writer http.ResponseWriter, request *http.Request
 	return writeJSON(writer, http.StatusOK, map[string]string{"Message": "Sucessfully created user"})
 }
 
-func (server *Server) login(writer http.ResponseWriter, request *http.Request) error {
+func (server *Server) handleLoginUser(writer http.ResponseWriter, request *http.Request) error {
 	var usr loginUserRequest
 	err := parseJSON(request, &usr)
 
@@ -138,6 +138,7 @@ func (server *Server) login(writer http.ResponseWriter, request *http.Request) e
 		return err
 	}
 
+	//create jwt token when user logs in
 	tokenString, err := createJWT(usrID)
 
 	if err != nil {
@@ -147,7 +148,7 @@ func (server *Server) login(writer http.ResponseWriter, request *http.Request) e
 	return writeJSON(writer, http.StatusOK, map[string]string{"Message": "Sucessfully Logged in", "X-JWT-Token": tokenString})
 }
 
-func (server *Server) getUserByID(writer http.ResponseWriter, request *http.Request) error {
+func (server *Server) handleGetUserByID(writer http.ResponseWriter, request *http.Request) error {
 	reqID := mux.Vars(request)["ID"]
 
 	if reqID == "" {
@@ -161,4 +162,29 @@ func (server *Server) getUserByID(writer http.ResponseWriter, request *http.Requ
 	}
 
 	return writeJSON(writer, http.StatusOK, usr)
+}
+
+func (server *Server) handleLoginAdmin(writer http.ResponseWriter, request *http.Request) error {
+	var adm loginAdminRequest
+	err := parseJSON(request, &adm)
+
+	if err != nil {
+		return err
+	}
+
+	var admID string
+	admID, err = loginAdmin(adm)
+
+	if err != nil {
+		return err
+	}
+
+	//create jwt token when admin logs in
+	tokenString, err := createJWT(admID)
+
+	if err != nil {
+		return errors.New("error while creating jwt token uuid: " + err.Error())
+	}
+
+	return writeJSON(writer, http.StatusOK, map[string]string{"Message": "Sucessfully Logged in", "X-JWT-Token": tokenString})
 }
