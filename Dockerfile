@@ -10,6 +10,6 @@ COPY . .
 
 RUN go build -o backend .
 
-EXPOSE 8080
+EXPOSE 3000
 
 CMD ["./backend"]
