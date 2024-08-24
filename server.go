@@ -27,8 +27,26 @@ func handleError(function apiFunction) http.HandlerFunc {
 	}
 }
 
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-JWT-Token")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (server *Server) run() {
 	router := mux.NewRouter()
+
+	//use CORS middleware to allow cross domain requests, fix later whith nginx oder some other shit
+	router.Use(corsMiddleware)
 
 	/*
 		register routes
