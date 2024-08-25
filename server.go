@@ -56,22 +56,28 @@ func (server *Server) run() {
 		to handle errors locally
 
 	*/
-	router.HandleFunc("/bier", handleError(server.handleGetBier)).Methods("GET")
-	router.HandleFunc("/register", handleError(server.handleRegisterUser)).Methods("POST")
-	router.HandleFunc("/login", handleError(server.handleLoginUser)).Methods("POST")
+	router.HandleFunc("/bier", handleError(server.handleGetBier)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/register", handleError(server.handleRegisterUser)).Methods("POST", "OPTIONS")
+	router.HandleFunc("/login", handleError(server.handleLoginUser)).Methods("POST", "OPTIONS")
 
 	/*
 		guarded api routes
 	*/
 
-	router.HandleFunc("/user/{ID}", JWTAuth(handleError(server.handleGetUserByID))).Methods("GET")
+	router.HandleFunc("/user/{ID}", JWTAuth(handleError(server.handleGetUserByID))).Methods("GET", "OPTIONS")
 
 	/*
 		admin routes for dashboard
 	*/
 
-	router.HandleFunc("/admin/login", handleError(server.handleLoginAdmin)).Methods("POST")
-	router.HandleFunc("/admin/validateJWT", handleError(server.handleValidateAdminJWT)).Methods("POST")
+	router.HandleFunc("/admin/login", handleError(server.handleLoginAdmin)).Methods("POST", "OPTIONS")
+	router.HandleFunc("/admin/validateJWT", handleError(server.handleValidateAdminJWT)).Methods("POST", "OPTIONS")
+
+	/*
+		guarded admin api routes
+	*/
+
+	router.HandleFunc("/admin/{ID}", handleError(server.handleGetAdminByID)).Methods("GET", "OPTIONS")
 
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 
