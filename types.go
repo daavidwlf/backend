@@ -32,6 +32,11 @@ type loginAdminRequest struct {
 	Password string `json:"password"`
 }
 
+type validateJWTRequest struct {
+	Token string `json:"x-jwt-token"`
+	ID    string `json:"adminID"`
+}
+
 // type admin struct {
 // 	ID       uuid.UUID `json:"id"`
 // 	UserName string    `json:"userName"`

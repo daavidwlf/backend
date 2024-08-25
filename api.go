@@ -35,7 +35,7 @@ func parseJSON(request *http.Request, content any) error {
 
 // function to writer error in a consistent format
 func writeError(writer http.ResponseWriter, statusCode int, err error) {
-	writeJSON(writer, statusCode, map[string]string{"Error": err.Error()})
+	writeJSON(writer, statusCode, map[string]string{"message": err.Error()})
 }
 
 // middleware
@@ -47,12 +47,12 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 		token, err := validateJWT(tokenString)
 
 		if err != nil {
-			writeJSON(writer, http.StatusForbidden, map[string]string{"Message": "permission denied"})
+			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
 			return
 		}
 
 		if !token.Valid {
-			writeJSON(writer, http.StatusForbidden, map[string]string{"Message": "permission denied"})
+			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
 			return
 		}
 
@@ -61,7 +61,7 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 		reqID := mux.Vars(request)["ID"]
 
 		if reqID != claims["userID"] {
-			writeJSON(writer, http.StatusForbidden, map[string]string{"Message": "invalid token"})
+			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "invalid token"})
 			return
 		}
 
@@ -120,7 +120,7 @@ func (server *Server) handleRegisterUser(writer http.ResponseWriter, request *ht
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"Message": "Sucessfully created user"})
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully created user"})
 }
 
 func (server *Server) handleLoginUser(writer http.ResponseWriter, request *http.Request) error {
@@ -145,7 +145,7 @@ func (server *Server) handleLoginUser(writer http.ResponseWriter, request *http.
 		return errors.New("error while creating jwt token uuid: " + err.Error())
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"Message": "Sucessfully Logged in", "X-JWT-Token": tokenString})
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "X-JWT-Token": tokenString})
 }
 
 func (server *Server) handleGetUserByID(writer http.ResponseWriter, request *http.Request) error {
@@ -186,5 +186,38 @@ func (server *Server) handleLoginAdmin(writer http.ResponseWriter, request *http
 		return errors.New("error while creating jwt token uuid: " + err.Error())
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"Message": "Sucessfully Logged in", "X-JWT-Token": tokenString})
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "X-JWT-Token": tokenString, "adminID": admID})
+}
+
+func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request *http.Request) error {
+	var jwtRequest validateJWTRequest
+	err := parseJSON(request, &jwtRequest)
+
+	if err != nil {
+		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Ainvalid token" + err.Error()})
+		return nil
+	}
+
+	var token *jwt.Token
+	token, err = validateJWT(jwtRequest.Token)
+
+	if err != nil {
+		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Binvalid token"})
+		return nil
+	}
+
+	if !token.Valid {
+		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Cinvalid token"})
+		return nil
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+
+	//userID because its called like that in the creatJWT function
+	if jwtRequest.ID != claims["userID"] {
+		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Dinvalid token"})
+		return nil
+	}
+
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "valid token"})
 }
