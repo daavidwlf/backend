@@ -37,10 +37,10 @@ type validateJWTRequest struct {
 	ID    string `json:"adminID"`
 }
 
-// type admin struct {
-// 	ID       uuid.UUID `json:"id"`
-// 	UserName string    `json:"userName"`
-// 	Email    string    `json:"email"`
-// 	Password string    `json:"-"`
-// 	Created  int       `json:"created"`
-// }
+type admin struct {
+	ID       uuid.UUID `json:"id"`
+	UserName string    `json:"userName"`
+	Email    string    `json:"email"`
+	Password string    `json:"-"`
+	Created  int       `json:"created"`
+}

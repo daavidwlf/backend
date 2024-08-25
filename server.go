@@ -77,7 +77,7 @@ func (server *Server) run() {
 		guarded admin api routes
 	*/
 
-	router.HandleFunc("/admin/{ID}", handleError(server.handleGetAdminByID)).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admin/{ID}", JWTAuth(handleError(server.handleGetAdminByID))).Methods("GET", "OPTIONS")
 
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 

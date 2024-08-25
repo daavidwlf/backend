@@ -186,3 +186,20 @@ func loginAdmin(adm loginAdminRequest) (string, error) {
 
 	return admID, nil
 }
+
+func getAdminByID(admID string) (*admin, error) {
+
+	var adm admin
+
+	err := db.QueryRow(`SELECT AdminID, Email, UserName, Created FROM admins WHERE AdminID = ?`, admID).Scan(&adm.ID, &adm.Email, &adm.UserName, &adm.Created)
+
+	if err == sql.ErrNoRows {
+		return nil, errors.New("admin not found")
+	}
+
+	if err != nil {
+		return nil, errors.New("error occured getting admin from db" + err.Error())
+	}
+
+	return &adm, nil
+}

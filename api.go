@@ -221,3 +221,19 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 
 	return writeJSON(writer, http.StatusOK, map[string]string{"message": "valid token"})
 }
+
+func (server *Server) handleGetAdminByID(writer http.ResponseWriter, request *http.Request) error {
+	reqID := mux.Vars(request)["ID"]
+
+	if reqID == "" {
+		return errors.New("invalid ID")
+	}
+
+	adm, err := getAdminByID(reqID)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, adm)
+}
