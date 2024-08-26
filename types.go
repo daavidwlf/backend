@@ -19,7 +19,7 @@ type registerUserRequest struct {
 }
 
 type user struct {
-	ID        uuid.UUID `json:"id"`
+	ID        uuid.UUID `json:"userID"`
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
 	Email     string    `json:"email"`
@@ -38,7 +38,7 @@ type validateJWTRequest struct {
 }
 
 type admin struct {
-	ID       uuid.UUID `json:"id"`
+	ID       uuid.UUID `json:"adminID"`
 	UserName string    `json:"userName"`
 	Email    string    `json:"email"`
 	Password string    `json:"-"`

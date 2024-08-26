@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
@@ -226,7 +227,7 @@ func (server *Server) handleGetAdminByID(writer http.ResponseWriter, request *ht
 	reqID := mux.Vars(request)["ID"]
 
 	if reqID == "" {
-		return errors.New("invalid ID")
+		return errors.New("asinvalid ID")
 	}
 
 	adm, err := getAdminByID(reqID)
@@ -236,4 +237,27 @@ func (server *Server) handleGetAdminByID(writer http.ResponseWriter, request *ht
 	}
 
 	return writeJSON(writer, http.StatusOK, adm)
+}
+
+func (server *Server) hanldeGetMultibleAdmins(writer http.ResponseWriter, request *http.Request) error {
+	quantityParam := request.URL.Query().Get("quantity")
+
+	var quantity int
+	var err error
+	if quantityParam != "" {
+		quantity, err = strconv.Atoi(quantityParam)
+
+		if err != nil {
+			return errors.New("unable to parse quantity")
+		}
+	} else {
+		quantity = 10
+	}
+	var adminList *[]admin
+	adminList, err = getMultibleAdmins(quantity)
+
+	if err != nil {
+		return err
+	}
+	return writeJSON(writer, http.StatusOK, adminList)
 }

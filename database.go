@@ -203,3 +203,30 @@ func getAdminByID(admID string) (*admin, error) {
 
 	return &adm, nil
 }
+
+func getMultibleAdmins(quantity int) (*[]admin, error) {
+	var adminList []admin
+
+	rows, err := db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
+
+	if err != nil {
+		return nil, errors.New("unable to get admins" + err.Error())
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var current admin
+
+		err := rows.Scan(&current.ID, &current.Email, &current.UserName, &current.Created)
+
+		if err != nil {
+			return nil, errors.New("error while appending admins" + err.Error())
+		}
+
+		adminList = append(adminList, current)
+	}
+
+	return &adminList, nil
+
+}
