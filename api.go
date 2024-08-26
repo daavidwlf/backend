@@ -59,9 +59,9 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 
 		claims := token.Claims.(jwt.MapClaims)
 
-		reqID := mux.Vars(request)["ID"]
+		reqID := request.Header.Get("ID")
 
-		if reqID != claims["userID"] {
+		if reqID != claims["ID"] {
 			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "invalid token"})
 			return
 		}
@@ -87,7 +87,7 @@ func validateJWT(tokenString string) (*jwt.Token, error) {
 func createJWT(usrID string) (string, error) {
 	claims := &jwt.MapClaims{
 		"expiresAt": 15000,
-		"userID":    usrID,
+		"ID":        usrID,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -214,8 +214,7 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 
 	claims := token.Claims.(jwt.MapClaims)
 
-	//userID because its called like that in the creatJWT function
-	if jwtRequest.ID != claims["userID"] {
+	if jwtRequest.ID != claims["ID"] {
 		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Dinvalid token"})
 		return nil
 	}
