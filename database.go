@@ -148,15 +148,15 @@ func getUserByID(usrID string) (*user, error) {
 
 func loginUser(usr loginUserRequest) (string, error) {
 	query := `SELECT UserID, Password FROM users where email = ?`
-	return loginHelper(usr.Email, usr.Password, query, "UserID")
+	return loginHelper(usr.Email, usr.Password, query)
 }
 
 func loginAdmin(adm loginAdminRequest) (string, error) {
 	query := `SELECT AdminID, Password FROM admins where email = ?`
-	return loginHelper(adm.Email, adm.Password, query, "AdminID")
+	return loginHelper(adm.Email, adm.Password, query)
 }
 
-func loginHelper(email, password, query, idField string) (string, error) {
+func loginHelper(email, password, query string) (string, error) {
 	var requiredPassword string
 	var userID string
 
