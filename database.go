@@ -129,30 +129,6 @@ func registerUser(usr registerUserRequest) error {
 	return err
 }
 
-func loginUser(usr loginUserRequest) (string, error) {
-
-	var requiredPassword string
-	var usrID string
-
-	err := db.QueryRow(`SELECT UserID, Password FROM users where email = ?`, usr.Email).Scan(&usrID, &requiredPassword)
-
-	if err == sql.ErrNoRows {
-		return "", errors.New("email doesn't exist")
-	}
-
-	if err != nil {
-		return "", errors.New("error while logging in " + err.Error())
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(usr.Password))
-
-	if err != nil {
-		return "", errors.New("wrong password")
-	}
-
-	return usrID, nil
-}
-
 func getUserByID(usrID string) (*user, error) {
 
 	var usr user
@@ -170,12 +146,21 @@ func getUserByID(usrID string) (*user, error) {
 	return &usr, nil
 }
 
+func loginUser(usr loginUserRequest) (string, error) {
+	query := `SELECT UserID, Password FROM users where email = ?`
+	return loginHelper(usr.Email, usr.Password, query, "UserID")
+}
+
 func loginAdmin(adm loginAdminRequest) (string, error) {
+	query := `SELECT AdminID, Password FROM admins where email = ?`
+	return loginHelper(adm.Email, adm.Password, query, "AdminID")
+}
 
+func loginHelper(email, password, query, idField string) (string, error) {
 	var requiredPassword string
-	var admID string
+	var userID string
 
-	err := db.QueryRow(`SELECT AdminID, Password FROM admins where email = ?`, adm.Email).Scan(&admID, &requiredPassword)
+	err := db.QueryRow(query, email).Scan(&userID, &requiredPassword)
 
 	if err == sql.ErrNoRows {
 		return "", errors.New("email doesn't exist")
@@ -185,13 +170,13 @@ func loginAdmin(adm loginAdminRequest) (string, error) {
 		return "", errors.New("error while logging in " + err.Error())
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(adm.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(password))
 
 	if err != nil {
 		return "", errors.New("wrong password")
 	}
 
-	return admID, nil
+	return userID, nil
 }
 
 func getAdminByID(admID string) (*admin, error) {
