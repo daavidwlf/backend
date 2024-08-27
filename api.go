@@ -233,7 +233,7 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 		return nil
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
+	claims, _ := token.Claims.(jwt.MapClaims)
 
 	if jwtRequest.ID != claims["ID"] {
 		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Dinvalid token"})
