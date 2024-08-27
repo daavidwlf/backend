@@ -134,7 +134,7 @@ func loginUser(usr loginUserRequest) (string, error) {
 	}
 
 	if err != nil {
-		return "", errors.New("error while logging in" + err.Error())
+		return "", errors.New("error while logging in " + err.Error())
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(usr.Password))
@@ -157,7 +157,7 @@ func getUserByID(usrID string) (*user, error) {
 	}
 
 	if err != nil {
-		return nil, errors.New("error occured getting user from db" + err.Error())
+		return nil, errors.New("error occured getting user from db " + err.Error())
 	}
 
 	return &usr, nil
@@ -175,7 +175,7 @@ func loginAdmin(adm loginAdminRequest) (string, error) {
 	}
 
 	if err != nil {
-		return "", errors.New("error while logging in" + err.Error())
+		return "", errors.New("error while logging in " + err.Error())
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(adm.Password))
@@ -198,7 +198,7 @@ func getAdminByID(admID string) (*admin, error) {
 	}
 
 	if err != nil {
-		return nil, errors.New("error occured getting admin from db" + err.Error())
+		return nil, errors.New("error occured getting admin from db " + err.Error())
 	}
 
 	return &adm, nil
@@ -210,7 +210,7 @@ func getMultibleAdmins(quantity int) (*[]admin, error) {
 	rows, err := db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
 
 	if err != nil {
-		return nil, errors.New("unable to get admins" + err.Error())
+		return nil, errors.New("unable to get admins " + err.Error())
 	}
 
 	defer rows.Close()
@@ -221,7 +221,7 @@ func getMultibleAdmins(quantity int) (*[]admin, error) {
 		err := rows.Scan(&current.ID, &current.Email, &current.UserName, &current.Created)
 
 		if err != nil {
-			return nil, errors.New("error while appending admins" + err.Error())
+			return nil, errors.New("error while appending admins " + err.Error())
 		}
 
 		adminList = append(adminList, current)
@@ -229,4 +229,36 @@ func getMultibleAdmins(quantity int) (*[]admin, error) {
 
 	return &adminList, nil
 
+}
+
+func editAdmin(adminID string, edit *editAdminRequest) (*editAdminRequest, error) {
+
+	fmt.Println(adminID)
+
+	fmt.Println(edit.Email, edit.UserName)
+
+	result, err := db.Exec(`UPDATE admins SET Username = ?, Email = ? WHERE AdminID = ?`, edit.UserName, edit.Email, adminID)
+
+	if err != nil {
+		return nil, errors.New("error while updating db " + err.Error())
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, errors.New("error while checking affected rows: " + err.Error())
+	}
+
+	if rowsAffected == 0 {
+		return nil, errors.New("no rows affected")
+	}
+
+	err = db.QueryRow(`SELECT Username, Email FROM admins WHERE AdminID = ?`, adminID).Scan(&edit.UserName, &edit.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("no admin found after update with the given AdminID")
+		}
+		return nil, errors.New("error while fetching updated admin: " + err.Error())
+	}
+
+	return edit, nil
 }

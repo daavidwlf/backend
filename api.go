@@ -258,5 +258,33 @@ func (server *Server) hanldeGetMultibleAdmins(writer http.ResponseWriter, reques
 	if err != nil {
 		return err
 	}
+
 	return writeJSON(writer, http.StatusOK, adminList)
+}
+
+func (server *Server) handleEditAdmin(writer http.ResponseWriter, request *http.Request) error {
+
+	adminID := mux.Vars(request)["ID"]
+
+	if adminID == "" {
+		return errors.New("id invalid")
+	}
+
+	var editAdm editAdminRequest
+
+	err := parseJSON(request, &editAdm)
+
+	if err != nil {
+		return errors.New("unable to parse json" + err.Error())
+	}
+
+	var adm *editAdminRequest
+
+	adm, err = editAdmin(adminID, &editAdm)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, adm)
 }

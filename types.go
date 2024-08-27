@@ -44,3 +44,8 @@ type admin struct {
 	Password string    `json:"-"`
 	Created  int       `json:"created"`
 }
+
+type editAdminRequest struct {
+	UserName string `json:"userName"`
+	Email    string `json:"email"`
+}

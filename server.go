@@ -79,6 +79,7 @@ func (server *Server) run() {
 
 	router.HandleFunc("/admin/{ID}", JWTAuth(handleError(server.handleGetAdminByID))).Methods("GET", "OPTIONS")
 	router.HandleFunc("/admins", JWTAuth(handleError(server.hanldeGetMultibleAdmins))).Methods("GET", "OPTIONS")
+	router.HandleFunc("/admins/edit/{ID}", JWTAuth(handleError(server.handleEditAdmin))).Methods("POST", "OPTIONS")
 
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 
