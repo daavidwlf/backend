@@ -35,34 +35,46 @@ func parseJSON(request *http.Request, content any) error {
 }
 
 // function to writer error in a consistent format
-func writeError(writer http.ResponseWriter, statusCode int, err error) {
-	writeJSON(writer, statusCode, map[string]string{"message": err.Error()})
+func writeError(writer http.ResponseWriter, statusCode int, errmsg error) {
+	err := writeJSON(writer, statusCode, map[string]string{"message": errmsg.Error()})
+	if err != nil {
+		fmt.Println("Server: Error ocurred: ", err.Error())
+	}
 }
 
 // middleware
 func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 
-		tokenString := request.Header.Get("X-JWT-Token")
+		tokenString := request.Header.Get("xJwtToken")
 
 		token, err := validateJWT(tokenString)
 
 		if err != nil {
-			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			if err != nil {
+				fmt.Println("Server: Error ocurred: ", err.Error())
+			}
 			return
 		}
 
 		if !token.Valid {
-			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			if err != nil {
+				fmt.Println("Server: Error ocurred: ", err.Error())
+			}
 			return
 		}
 
-		claims := token.Claims.(jwt.MapClaims)
+		claims, _ := token.Claims.(jwt.MapClaims)
 
 		reqID := request.Header.Get("ID")
 
 		if reqID != claims["ID"] {
-			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "invalid token"})
+			err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "invalid token"})
+			if err != nil {
+				fmt.Println("Server: Error ocurred: ", err.Error())
+			}
 			return
 		}
 
@@ -103,7 +115,7 @@ func createJWT(usrID string) (string, error) {
 
 */
 
-func (server *Server) handleGetBier(writer http.ResponseWriter, request *http.Request) error {
+func (server *Server) handleGetBier(writer http.ResponseWriter, _ *http.Request) error {
 	return writeJSON(writer, http.StatusOK, "Bier")
 }
 
@@ -139,7 +151,7 @@ func (server *Server) handleLoginUser(writer http.ResponseWriter, request *http.
 		return err
 	}
 
-	//create jwt token when user logs in
+	// create jwt token when user logs in
 	tokenString, err := createJWT(usrID)
 
 	if err != nil {
@@ -180,14 +192,14 @@ func (server *Server) handleLoginAdmin(writer http.ResponseWriter, request *http
 		return err
 	}
 
-	//create jwt token when admin logs in
+	// create jwt token when admin logs in
 	tokenString, err := createJWT(admID)
 
 	if err != nil {
 		return errors.New("error while creating jwt token uuid: " + err.Error())
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "X-JWT-Token": tokenString, "adminID": admID})
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "xJwtToken": tokenString, "adminId": admID})
 }
 
 func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request *http.Request) error {
@@ -195,7 +207,10 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 	err := parseJSON(request, &jwtRequest)
 
 	if err != nil {
-		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Ainvalid token" + err.Error()})
+		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Ainvalid token" + err.Error()})
+		if err != nil {
+			fmt.Println("Server: Error ocurred: ", err.Error())
+		}
 		return nil
 	}
 
@@ -203,19 +218,28 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 	token, err = validateJWT(jwtRequest.Token)
 
 	if err != nil {
-		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Binvalid token"})
+		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Binvalid token"})
+		if err != nil {
+			fmt.Println("Server: Error ocurred: ", err.Error())
+		}
 		return nil
 	}
 
 	if !token.Valid {
-		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Cinvalid token"})
+		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Cinvalid token"})
+		if err != nil {
+			fmt.Println("Server: Error ocurred: ", err.Error())
+		}
 		return nil
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
+	claims, _ := token.Claims.(jwt.MapClaims)
 
 	if jwtRequest.ID != claims["ID"] {
-		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Dinvalid token"})
+		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Dinvalid token"})
+		if err != nil {
+			fmt.Println("Server: Error ocurred: ", err.Error())
+		}
 		return nil
 	}
 

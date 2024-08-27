@@ -17,7 +17,6 @@ var db *sql.DB
 
 func connectDB() {
 
-	//dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
 	dbUser := os.Getenv("DB_USER")
 	dbPass := os.Getenv("DB_PASS")
@@ -38,7 +37,7 @@ func connectDB() {
 
 	fmt.Println("Server: Database opend")
 
-	//test if connection to db was established
+	// test if connection to db was established
 	for i := 0; i < 5; i++ {
 		err = db.Ping()
 
@@ -68,7 +67,7 @@ func connectDB() {
 			break
 		}
 
-		//retrying after 5 seconds
+		// retrying after 5 seconds
 		time.Sleep(5 * time.Second)
 	}
 
@@ -93,7 +92,7 @@ func registerUser(usr registerUserRequest) error {
 		return errors.New("couldn't execute user search in database: " + err.Error())
 	}
 
-	//create new user
+	// create new user
 	var newUser user
 	var IDerr error
 	newUser.ID, IDerr = uuid.NewUUID()
@@ -130,30 +129,6 @@ func registerUser(usr registerUserRequest) error {
 	return err
 }
 
-func loginUser(usr loginUserRequest) (string, error) {
-
-	var requiredPassword string
-	var usrID string
-
-	err := db.QueryRow(`SELECT UserID, Password FROM users where email = ?`, usr.Email).Scan(&usrID, &requiredPassword)
-
-	if err == sql.ErrNoRows {
-		return "", errors.New("email doesn't exist")
-	}
-
-	if err != nil {
-		return "", errors.New("error while logging in " + err.Error())
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(usr.Password))
-
-	if err != nil {
-		return "", errors.New("wrong password")
-	}
-
-	return usrID, nil
-}
-
 func getUserByID(usrID string) (*user, error) {
 
 	var usr user
@@ -171,12 +146,21 @@ func getUserByID(usrID string) (*user, error) {
 	return &usr, nil
 }
 
+func loginUser(usr loginUserRequest) (string, error) {
+	query := `SELECT UserID, Password FROM users where email = ?`
+	return loginHelper(usr.Email, usr.Password, query)
+}
+
 func loginAdmin(adm loginAdminRequest) (string, error) {
+	query := `SELECT AdminID, Password FROM admins where email = ?`
+	return loginHelper(adm.Email, adm.Password, query)
+}
 
+func loginHelper(email, password, query string) (string, error) {
 	var requiredPassword string
-	var admID string
+	var userID string
 
-	err := db.QueryRow(`SELECT AdminID, Password FROM admins where email = ?`, adm.Email).Scan(&admID, &requiredPassword)
+	err := db.QueryRow(query, email).Scan(&userID, &requiredPassword)
 
 	if err == sql.ErrNoRows {
 		return "", errors.New("email doesn't exist")
@@ -186,13 +170,13 @@ func loginAdmin(adm loginAdminRequest) (string, error) {
 		return "", errors.New("error while logging in " + err.Error())
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(adm.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(requiredPassword), []byte(password))
 
 	if err != nil {
 		return "", errors.New("wrong password")
 	}
 
-	return admID, nil
+	return userID, nil
 }
 
 func getAdminByID(admID string) (*admin, error) {

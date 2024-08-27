@@ -1,0 +1,39 @@
+services:
+  mysql:
+    image: mysql:latest
+    container_name: ${DB_HOST}
+    networks:
+      - apiNetwork
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASS}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data-storage:/var/lib/mysql
+
+  #used this image instead of the standard one because it supports arm
+  phpmyadmin:
+    image: lscr.io/linuxserver/phpmyadmin:latest
+    container_name: phpmyadmin
+    networks:
+      - apiNetwork
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASS}
+      PUID: 1000
+      PGID: 1000
+      TZ: Etc/UTC
+    ports:
+      - "${PHP_MYADMIN_PORT}:80"
+    depends_on:
+      - mysql
+
+networks:
+  apiNetwork:
+    driver: bridge
+
+volumes:
+  db-data-storage:

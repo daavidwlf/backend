@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -31,7 +32,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3001")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-JWT-Token, ID")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, xJwtToken, ID")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		if r.Method == "OPTIONS" {
@@ -46,7 +47,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 func (server *Server) run() {
 	router := mux.NewRouter()
 
-	//use CORS middleware to allow cross domain requests, fix later whith nginx oder some other shit
+	// use CORS middleware to allow cross domain requests, fix later whith nginx oder some other shit
 	router.Use(corsMiddleware)
 
 	/*
@@ -83,5 +84,17 @@ func (server *Server) run() {
 
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 
-	http.ListenAndServe(server.adress, router)
+	serverhandler := &http.Server{
+		Addr:         server.adress,
+		Handler:      router,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+
+	err := serverhandler.ListenAndServe()
+
+	if err != nil {
+		fmt.Printf("Server: Error running server: %v\n", err)
+	}
 }
