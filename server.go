@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -83,7 +84,18 @@ func (server *Server) run() {
 
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 
-	err := http.ListenAndServe(server.adress, router)
+	serverhandler := &http.Server{
+		Addr:    server.adress,
+		Handler: router,
+		// Setze Timeout-Einstellungen, um sicherzustellen, dass der Server nicht anfällig für Angriffe ist
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+
+	err := serverhandler.ListenAndServe()
+
+	//err := http.ListenAndServe(server.adress, router)
 	if err != nil {
 		fmt.Printf("Server: Error running server: %v\n", err)
 	}

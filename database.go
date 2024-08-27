@@ -37,7 +37,7 @@ func connectDB() {
 
 	fmt.Println("Server: Database opend")
 
-	//test if connection to db was established
+	// test if connection to db was established
 	for i := 0; i < 5; i++ {
 		err = db.Ping()
 
@@ -67,7 +67,7 @@ func connectDB() {
 			break
 		}
 
-		//retrying after 5 seconds
+		// retrying after 5 seconds
 		time.Sleep(5 * time.Second)
 	}
 
@@ -92,7 +92,7 @@ func registerUser(usr registerUserRequest) error {
 		return errors.New("couldn't execute user search in database: " + err.Error())
 	}
 
-	//create new user
+	// create new user
 	var newUser user
 	var IDerr error
 	newUser.ID, IDerr = uuid.NewUUID()

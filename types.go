@@ -33,7 +33,7 @@ type loginAdminRequest struct {
 }
 
 type validateJWTRequest struct {
-	Token string `json:"x-jwt-token"`
+	Token string `json:"xJwtToken"`
 	ID    string `json:"adminId"`
 }
 
