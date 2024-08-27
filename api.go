@@ -218,19 +218,28 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 	token, err = validateJWT(jwtRequest.Token)
 
 	if err != nil {
-		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Binvalid token"})
+		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Binvalid token"})
+		if err != nil {
+			fmt.Println("Server: Error ocurred: ", err.Error())
+		}
 		return nil
 	}
 
 	if !token.Valid {
-		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Cinvalid token"})
+		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Cinvalid token"})
+		if err != nil {
+			fmt.Println("Server: Error ocurred: ", err.Error())
+		}
 		return nil
 	}
 
 	claims := token.Claims.(jwt.MapClaims)
 
 	if jwtRequest.ID != claims["ID"] {
-		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Dinvalid token"})
+		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Dinvalid token"})
+		if err != nil {
+			fmt.Println("Server: Error ocurred: ", err.Error())
+		}
 		return nil
 	}
 
