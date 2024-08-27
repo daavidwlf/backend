@@ -31,7 +31,7 @@ func initDB() {
 
 	// Create users table
 	usersTableQuery := `CREATE TABLE IF NOT EXISTS users (
-		UserID INT AUTO_INCREMENT PRIMARY KEY,
+		UserId INT AUTO_INCREMENT PRIMARY KEY,
 		FirstName VARCHAR(255) NOT NULL,
 		LastName VARCHAR(255) NOT NULL,
 		Email VARCHAR(255) NOT NULL UNIQUE,

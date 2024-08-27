@@ -83,5 +83,8 @@ func (server *Server) run() {
 
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 
-	http.ListenAndServe(server.adress, router)
+	err := http.ListenAndServe(server.adress, router)
+	if err != nil {
+		fmt.Printf("Server: Error running server: %v\n", err)
+	}
 }

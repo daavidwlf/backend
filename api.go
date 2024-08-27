@@ -103,7 +103,7 @@ func createJWT(usrID string) (string, error) {
 
 */
 
-func (server *Server) handleGetBier(writer http.ResponseWriter, request *http.Request) error {
+func (server *Server) handleGetBier(writer http.ResponseWriter, _ *http.Request) error {
 	return writeJSON(writer, http.StatusOK, "Bier")
 }
 
@@ -139,7 +139,7 @@ func (server *Server) handleLoginUser(writer http.ResponseWriter, request *http.
 		return err
 	}
 
-	//create jwt token when user logs in
+	// create jwt token when user logs in
 	tokenString, err := createJWT(usrID)
 
 	if err != nil {
@@ -180,7 +180,7 @@ func (server *Server) handleLoginAdmin(writer http.ResponseWriter, request *http
 		return err
 	}
 
-	//create jwt token when admin logs in
+	// create jwt token when admin logs in
 	tokenString, err := createJWT(admID)
 
 	if err != nil {

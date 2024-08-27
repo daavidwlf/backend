@@ -19,7 +19,7 @@ type registerUserRequest struct {
 }
 
 type user struct {
-	ID        uuid.UUID `json:"userID"`
+	ID        uuid.UUID `json:"userId"`
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
 	Email     string    `json:"email"`
@@ -34,11 +34,11 @@ type loginAdminRequest struct {
 
 type validateJWTRequest struct {
 	Token string `json:"x-jwt-token"`
-	ID    string `json:"adminID"`
+	ID    string `json:"adminId"`
 }
 
 type admin struct {
-	ID       uuid.UUID `json:"adminID"`
+	ID       uuid.UUID `json:"adminId"`
 	UserName string    `json:"userName"`
 	Email    string    `json:"email"`
 	Password string    `json:"-"`
