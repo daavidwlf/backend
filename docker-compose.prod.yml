@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:latest
-    container_name: db_mysql
+    container_name: ${DB_HOST}
     networks:
       - apiNetwork
     environment:
@@ -12,7 +12,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./volumes/database:/var/lib/mysql
+      - db-data-storage:/var/lib/mysql
 
   backend:
     build: .
@@ -22,11 +22,11 @@ services:
     depends_on:
       - mysql
     environment:
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=david
-      - DB_PASS=1234
-      - DB_NAME=database
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
     ports:
       - "${BACKEND_PORT}:3000"
 
@@ -50,3 +50,6 @@ services:
 networks:
   apiNetwork:
     driver: bridge
+
+volumes:
+  db-data-storage:
