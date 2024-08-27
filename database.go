@@ -22,8 +22,9 @@ func connectDB() {
 	dbUser := os.Getenv("DB_USER")
 	dbPass := os.Getenv("DB_PASS")
 	dbName := os.Getenv("DB_NAME")
+	dbHost := os.Getenv("DB_HOST")
 
-	dsn := fmt.Sprintf("%s:%s@tcp(db_mysql:%s)/%s", dbUser, dbPass, dbPort, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPass, dbHost, dbPort, dbName)
 
 	fmt.Println(dsn)
 	fmt.Println("Server: Opening database")
@@ -42,20 +43,27 @@ func connectDB() {
 		err = db.Ping()
 
 		if err == nil {
-
-			query := "SELECT id, name FROM test where id = ?"
+			// check first row
+			query := "SELECT id, name FROM test LIMIT 1"
 			var id int
 			var name string
 
 			// perform a a test query - needs to be removed later
-			err = db.QueryRow(query, 1).Scan(&id, &name)
+			err = db.QueryRow(query).Scan(&id, &name)
+
+			if err != nil {
+				fmt.Println("Server: Table not found, initializing database...")
+				initDB()
+			}
+
+			err = db.QueryRow(query).Scan(&id, &name)
 
 			if err != nil {
 				log.Fatal("Server: Error while perfoming Query: ", err.Error())
 			}
 
 			fmt.Println("Server: Sucessfully performed Query")
-			fmt.Printf("Results: id: %d , name: %s", id, name)
+			fmt.Printf("Results: id: %d , name: %s\n", id, name)
 
 			break
 		}
