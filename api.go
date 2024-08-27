@@ -35,8 +35,11 @@ func parseJSON(request *http.Request, content any) error {
 }
 
 // function to writer error in a consistent format
-func writeError(writer http.ResponseWriter, statusCode int, err error) {
-	writeJSON(writer, statusCode, map[string]string{"message": err.Error()})
+func writeError(writer http.ResponseWriter, statusCode int, errmsg error) {
+	err := writeJSON(writer, statusCode, map[string]string{"message": errmsg.Error()})
+	if err != nil {
+		fmt.Println("Server: Error ocurred: ", err.Error())
+	}
 }
 
 // middleware
@@ -63,7 +66,7 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		claims := token.Claims.(jwt.MapClaims)
+		claims, _ := token.Claims.(jwt.MapClaims)
 
 		reqID := request.Header.Get("ID")
 
@@ -204,7 +207,10 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 	err := parseJSON(request, &jwtRequest)
 
 	if err != nil {
-		writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Ainvalid token" + err.Error()})
+		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Ainvalid token" + err.Error()})
+		if err != nil {
+			fmt.Println("Server: Error ocurred: ", err.Error())
+		}
 		return nil
 	}
 
