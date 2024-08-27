@@ -46,7 +46,7 @@ func writeError(writer http.ResponseWriter, statusCode int, errmsg error) {
 func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 
-		tokenString := request.Header.Get("X-JWT-Token")
+		tokenString := request.Header.Get("xJwtToken")
 
 		token, err := validateJWT(tokenString)
 
@@ -199,7 +199,7 @@ func (server *Server) handleLoginAdmin(writer http.ResponseWriter, request *http
 		return errors.New("error while creating jwt token uuid: " + err.Error())
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "X-JWT-Token": tokenString, "adminID": admID})
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "xJwtToken": tokenString, "adminId": admID})
 }
 
 func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request *http.Request) error {
