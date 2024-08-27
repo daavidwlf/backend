@@ -47,7 +47,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 func (server *Server) run() {
 	router := mux.NewRouter()
 
-	//use CORS middleware to allow cross domain requests, fix later whith nginx oder some other shit
+	// use CORS middleware to allow cross domain requests, fix later whith nginx oder some other shit
 	router.Use(corsMiddleware)
 
 	/*
@@ -85,9 +85,8 @@ func (server *Server) run() {
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 
 	serverhandler := &http.Server{
-		Addr:    server.adress,
-		Handler: router,
-		// Setze Timeout-Einstellungen, um sicherzustellen, dass der Server nicht anfällig für Angriffe ist
+		Addr:         server.adress,
+		Handler:      router,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
@@ -95,7 +94,6 @@ func (server *Server) run() {
 
 	err := serverhandler.ListenAndServe()
 
-	//err := http.ListenAndServe(server.adress, router)
 	if err != nil {
 		fmt.Printf("Server: Error running server: %v\n", err)
 	}

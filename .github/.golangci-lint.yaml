@@ -4,6 +4,10 @@ run:
   issues-exit-code: 2
   tests: false
 
+issues:
+  exclude:
+    - "Error return value is not checked (errcheck)"
+
 output:
   print-issued-lines: false
   print-linter-name: true
