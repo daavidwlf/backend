@@ -48,12 +48,18 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 		token, err := validateJWT(tokenString)
 
 		if err != nil {
-			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			if err != nil {
+				fmt.Println("Server: Error ocurred: ", err.Error())
+			}
 			return
 		}
 
 		if !token.Valid {
-			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			if err != nil {
+				fmt.Println("Server: Error ocurred: ", err.Error())
+			}
 			return
 		}
 
@@ -62,7 +68,10 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 		reqID := request.Header.Get("ID")
 
 		if reqID != claims["ID"] {
-			writeJSON(writer, http.StatusForbidden, map[string]string{"message": "invalid token"})
+			err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "invalid token"})
+			if err != nil {
+				fmt.Println("Server: Error ocurred: ", err.Error())
+			}
 			return
 		}
 
