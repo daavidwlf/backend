@@ -55,3 +55,15 @@ type addAdminRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type dockerContainer struct {
+	Name        string   `json:"name"`
+	PublicPort  uint16   `json:"publicPort"`
+	PrivatePort uint16   `json:"privatePort"`
+	IP          string   `json:"ip"`
+	Created     int64    `json:"created"`
+	State       string   `json:"state"`
+	Status      string   `json:"status"`
+	Image       string   `json:"image"`
+	Volumes     []string `json:"volume"`
+}

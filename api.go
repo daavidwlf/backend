@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 )
@@ -348,4 +351,62 @@ func (server *Server) handleAddAdmin(writer http.ResponseWriter, request *http.R
 	}
 
 	return writeJSON(writer, http.StatusOK, map[string]string{"message": "admin " + newAdmin.UserName + " successfullyy created"})
+}
+
+func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, request *http.Request) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+
+	if err != nil {
+		return errors.New("failed to create docker client: " + err.Error())
+	}
+
+	defer cli.Close()
+
+	// set client version to docker deamon version
+	cli.NegotiateAPIVersion(context.Background())
+
+	runningContainers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
+
+	if err != nil {
+		return errors.New("failed to list docker options: " + err.Error())
+	}
+
+	var containers []dockerContainer
+
+	for _, container := range runningContainers {
+		var current dockerContainer
+
+		if len(container.Names) > 0 {
+			current.Name = container.Names[0]
+		}
+
+		if len(container.Ports) > 0 {
+			port := container.Ports[0]
+			current.IP = port.IP
+			current.PublicPort = port.PublicPort
+			current.PrivatePort = port.PrivatePort
+		}
+
+		current.Created = container.Created
+
+		current.State = container.State
+
+		current.Status = container.Status
+
+		current.Image = container.Image
+
+		var volumes []string
+
+		for _, mount := range container.Mounts {
+			if mount.Type == "volume" {
+				volumes = append(volumes, mount.Name)
+			}
+		}
+
+		current.Volumes = volumes
+
+		containers = append(containers, current)
+	}
+
+	return writeJSON(writer, http.StatusOK, containers)
 }
