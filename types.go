@@ -49,3 +49,9 @@ type editAdminRequest struct {
 	UserName string `json:"userName"`
 	Email    string `json:"email"`
 }
+
+type addAdminRequest struct {
+	UserName string `json:"userName"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}

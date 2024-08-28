@@ -254,3 +254,72 @@ func editAdmin(adminID string, edit *editAdminRequest) (*editAdminRequest, error
 
 	return edit, nil
 }
+
+func deleteAdmin(adminID string) error {
+	result, err := db.Exec(`DELETE FROM admins WHERE AdminID = ?`, adminID)
+
+	if err != nil {
+		return errors.New("error while deleting db " + err.Error())
+	}
+
+	rowsAffected, err := result.RowsAffected()
+
+	if err != nil {
+		return errors.New("error while checking affected rows: " + err.Error())
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("no rows affected")
+	}
+
+	return err
+}
+
+func addAdmin(adm *addAdminRequest) (*admin, error) {
+	var mail string
+
+	err := db.QueryRow(`SELECT Email FROM admins where Email = ?`, adm.Email).Scan(&mail)
+
+	if err == nil {
+		return nil, errors.New("admin already exists")
+	}
+
+	if err != sql.ErrNoRows {
+		return nil, errors.New("couldn't execute admin search in database: " + err.Error())
+	}
+
+	// create new user
+	var newAdmin admin
+	var IDerr error
+	newAdmin.ID, IDerr = uuid.NewUUID()
+
+	if IDerr != nil {
+		return nil, errors.New("couldn't generate UUID: " + IDerr.Error())
+	}
+
+	newAdmin.Created = int(time.Now().Unix())
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adm.Password), bcrypt.DefaultCost)
+
+	if err != nil {
+		return nil, errors.New("couldn't hash password: " + err.Error())
+	}
+
+	newAdmin.Password = string(hashedPassword)
+
+	newAdmin.Email = adm.Email
+	newAdmin.UserName = adm.UserName
+
+	var rows *sql.Rows
+	rows, err = db.Query(`INSERT INTO admins (AdminID, Email, Username, Password, Created) VALUES (?, ?, ?, ?, ?)`, newAdmin.ID, newAdmin.Email, newAdmin.UserName, newAdmin.Password, newAdmin.Created)
+
+	if err != nil {
+		return nil, errors.New("couldn't execute admin creation on db: " + err.Error())
+	}
+
+	defer rows.Close()
+
+	fmt.Println("Server: New admin created: ID: ", newAdmin.ID)
+
+	return &newAdmin, err
+}
