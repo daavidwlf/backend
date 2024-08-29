@@ -353,7 +353,7 @@ func (server *Server) handleAddAdmin(writer http.ResponseWriter, request *http.R
 	return writeJSON(writer, http.StatusOK, map[string]string{"message": "admin " + newAdmin.UserName + " successfullyy created"})
 }
 
-func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, request *http.Request) error {
+func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, _ *http.Request) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 
 	if err != nil {
@@ -371,7 +371,7 @@ func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, requ
 		return errors.New("failed to list docker options: " + err.Error())
 	}
 
-	var containers []dockerContainer
+	containers := make([]dockerContainer, 0, len(runningContainers))
 
 	for _, container := range runningContainers {
 		var current dockerContainer
