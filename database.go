@@ -84,11 +84,12 @@ func editPerson(person person, id string, usr *editUserRequest, adm *editAdminRe
 	var result sql.Result
 	var err error
 
-	if person == USER {
+	switch person {
+	case USER:
 		result, err = db.Exec(`UPDATE users SET FirstName = ?, LastName = ?, Email = ? WHERE UserID = ?`, usr.FirstName, usr.LastName, usr.Email, id)
-	} else if person == ADMIN {
+	case ADMIN:
 		result, err = db.Exec(`UPDATE admins SET UserName = ?, Email = ? WHERE AdminID = ?`, adm.UserName, adm.Email, id)
-	} else {
+	default:
 		return "", errors.New("invalid person type")
 	}
 
@@ -117,11 +118,12 @@ func getMultiblePersons(person person, quantity int) (*[]user, *[]admin, error) 
 	var rows *sql.Rows
 	var err error
 
-	if person == USER {
+	switch person {
+	case USER:
 		rows, err = db.Query(`SELECT UserID, FirstName, LastName, Email, Created FROM users LIMIT ?`, quantity)
-	} else if person == ADMIN {
+	case ADMIN:
 		rows, err = db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
-	} else {
+	default:
 		return nil, nil, errors.New("invalid person type")
 	}
 
@@ -290,11 +292,12 @@ func deletePerson(person person, id string) error {
 	var result sql.Result
 	var err error
 
-	if person == USER {
+	switch person {
+	case USER:
 		result, err = db.Exec(`DELETE FROM users WHERE UserID = ?`, id)
-	} else if person == ADMIN {
+	case ADMIN:
 		result, err = db.Exec(`DELETE FROM admins WHERE AdminID = ?`, id)
-	} else {
+	default:
 		return errors.New("invalid person type")
 	}
 
