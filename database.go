@@ -108,6 +108,64 @@ func editPerson(person person, id string, usr *editUserRequest, adm *editAdminRe
 	return id, nil
 }
 
+func getMultiblePersons(person person, quantity int) (*[]user, *[]admin, error) {
+
+	var adminList []admin
+	var userList []user
+
+	var rows *sql.Rows
+	var err error
+
+	if person == USER {
+		rows, err = db.Query(`SELECT UserID, FirstName, LastName, Email, Created FROM users LIMIT ?`, quantity)
+	} else if person == ADMIN {
+		rows, err = db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
+	} else {
+		return nil, nil, errors.New("invalid person type")
+	}
+
+	if err != nil {
+		return nil, nil, errors.New("unable to perform query " + err.Error())
+	}
+
+	defer rows.Close()
+
+	if person == USER {
+		for rows.Next() {
+			var current user
+
+			err := rows.Scan(&current.ID, &current.FirstName, &current.LastName, &current.Email, &current.Created)
+
+			if err != nil {
+				return nil, nil, errors.New("error while appending users " + err.Error())
+			}
+
+			userList = append(userList, current)
+		}
+
+		return &userList, nil, nil
+	}
+
+	if person == ADMIN {
+		for rows.Next() {
+			var current admin
+
+			err := rows.Scan(&current.ID, &current.Email, &current.UserName, &current.Created)
+
+			if err != nil {
+				return nil, nil, errors.New("error while appending admins " + err.Error())
+			}
+
+			adminList = append(adminList, current)
+		}
+
+		return nil, &adminList, nil
+	}
+
+	return nil, nil, errors.New("invalid person type")
+
+}
+
 func registerUser(usr registerUserRequest) error {
 
 	var mail string
@@ -226,66 +284,18 @@ func getAdminByID(admID string) (*admin, error) {
 	return &adm, nil
 }
 
-func getMultiblePersons(person person, quantity int) (*[]user, *[]admin, error) {
+func deletePerson(person person, id string) error {
 
-	var adminList []admin
-	var userList []user
-
-	var rows *sql.Rows
+	var result sql.Result
 	var err error
 
 	if person == USER {
-		rows, err = db.Query(`SELECT UserID, FirstName, LastName, Email, Created FROM users LIMIT ?`, quantity)
+		result, err = db.Exec(`DELETE FROM users WHERE UserID = ?`, id)
 	} else if person == ADMIN {
-		rows, err = db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
+		result, err = db.Exec(`DELETE FROM admins WHERE AdminID = ?`, id)
 	} else {
-		return nil, nil, errors.New("invalid person type")
+		return errors.New("invalid person type")
 	}
-
-	if err != nil {
-		return nil, nil, errors.New("unable to perform query " + err.Error())
-	}
-
-	defer rows.Close()
-
-	if person == USER {
-		for rows.Next() {
-			var current user
-
-			err := rows.Scan(&current.ID, &current.FirstName, &current.LastName, &current.Email, &current.Created)
-
-			if err != nil {
-				return nil, nil, errors.New("error while appending users " + err.Error())
-			}
-
-			userList = append(userList, current)
-		}
-
-		return &userList, nil, nil
-	}
-
-	if person == ADMIN {
-		for rows.Next() {
-			var current admin
-
-			err := rows.Scan(&current.ID, &current.Email, &current.UserName, &current.Created)
-
-			if err != nil {
-				return nil, nil, errors.New("error while appending admins " + err.Error())
-			}
-
-			adminList = append(adminList, current)
-		}
-
-		return nil, &adminList, nil
-	}
-
-	return nil, nil, errors.New("invalid person type")
-
-}
-
-func deleteAdmin(adminID string) error {
-	result, err := db.Exec(`DELETE FROM admins WHERE AdminID = ?`, adminID)
 
 	if err != nil {
 		return errors.New("error while deleting db " + err.Error())
@@ -317,7 +327,7 @@ func addAdmin(adm *addAdminRequest) (*admin, error) {
 		return nil, errors.New("couldn't execute admin search in database: " + err.Error())
 	}
 
-	// create new user
+	// create new admin
 	var newAdmin admin
 	var IDerr error
 	newAdmin.ID, IDerr = uuid.NewUUID()

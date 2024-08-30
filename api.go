@@ -317,6 +317,22 @@ func (server *Server) handleGetMultibleUsers(writer http.ResponseWriter, request
 	return writeJSON(writer, http.StatusOK, userList)
 }
 
+func (server *Server) handleDeleteUser(writer http.ResponseWriter, request *http.Request) error {
+	userID := mux.Vars(request)["ID"]
+
+	if userID == "" {
+		return errors.New("id invalid")
+	}
+
+	err := deletePerson(USER, userID)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "user " + userID + " deleted"})
+}
+
 func (server *Server) handleGetMultibleAdmins(writer http.ResponseWriter, request *http.Request) error {
 	quantityParam := request.URL.Query().Get("quantity")
 
@@ -376,7 +392,7 @@ func (server *Server) handleDeleteAdmin(writer http.ResponseWriter, request *htt
 		return errors.New("id invalid")
 	}
 
-	err := deleteAdmin(adminID)
+	err := deletePerson(ADMIN, adminID)
 
 	if err != nil {
 		return err
