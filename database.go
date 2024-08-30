@@ -226,30 +226,61 @@ func getAdminByID(admID string) (*admin, error) {
 	return &adm, nil
 }
 
-func getMultibleAdmins(quantity int) (*[]admin, error) {
-	var adminList []admin
+func getMultiblePersons(person person, quantity int) (*[]user, *[]admin, error) {
 
-	rows, err := db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
+	var adminList []admin
+	var userList []user
+
+	var rows *sql.Rows
+	var err error
+
+	if person == USER {
+		rows, err = db.Query(`SELECT UserID, FirstName, LastName, Email, Created FROM users LIMIT ?`, quantity)
+	} else if person == ADMIN {
+		rows, err = db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
+	} else {
+		return nil, nil, errors.New("invalid person type")
+	}
 
 	if err != nil {
-		return nil, errors.New("unable to get admins " + err.Error())
+		return nil, nil, errors.New("unable to perform query " + err.Error())
 	}
 
 	defer rows.Close()
 
-	for rows.Next() {
-		var current admin
+	if person == USER {
+		for rows.Next() {
+			var current user
 
-		err := rows.Scan(&current.ID, &current.Email, &current.UserName, &current.Created)
+			err := rows.Scan(&current.ID, &current.FirstName, &current.LastName, &current.Email, &current.Created)
 
-		if err != nil {
-			return nil, errors.New("error while appending admins " + err.Error())
+			if err != nil {
+				return nil, nil, errors.New("error while appending users " + err.Error())
+			}
+
+			userList = append(userList, current)
 		}
 
-		adminList = append(adminList, current)
+		return &userList, nil, nil
 	}
 
-	return &adminList, nil
+	if person == ADMIN {
+		for rows.Next() {
+			var current admin
+
+			err := rows.Scan(&current.ID, &current.Email, &current.UserName, &current.Created)
+
+			if err != nil {
+				return nil, nil, errors.New("error while appending admins " + err.Error())
+			}
+
+			adminList = append(adminList, current)
+		}
+
+		return nil, &adminList, nil
+	}
+
+	return nil, nil, errors.New("invalid person type")
 
 }
 

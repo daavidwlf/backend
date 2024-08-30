@@ -291,11 +291,38 @@ func (server *Server) handleGetAdminByID(writer http.ResponseWriter, request *ht
 	return writeJSON(writer, http.StatusOK, adm)
 }
 
-func (server *Server) hanldeGetMultibleAdmins(writer http.ResponseWriter, request *http.Request) error {
+func (server *Server) handleGetMultibleUsers(writer http.ResponseWriter, request *http.Request) error {
 	quantityParam := request.URL.Query().Get("quantity")
 
 	var quantity int
 	var err error
+
+	if quantityParam != "" {
+		quantity, err = strconv.Atoi(quantityParam)
+
+		if err != nil {
+			return errors.New("unable to parse quantity")
+		}
+	} else {
+		quantity = 10
+	}
+
+	var userList *[]user
+	userList, _, err = getMultiblePersons(USER, quantity)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, userList)
+}
+
+func (server *Server) handleGetMultibleAdmins(writer http.ResponseWriter, request *http.Request) error {
+	quantityParam := request.URL.Query().Get("quantity")
+
+	var quantity int
+	var err error
+
 	if quantityParam != "" {
 		quantity, err = strconv.Atoi(quantityParam)
 
@@ -306,7 +333,7 @@ func (server *Server) hanldeGetMultibleAdmins(writer http.ResponseWriter, reques
 		quantity = 10
 	}
 	var adminList *[]admin
-	adminList, err = getMultibleAdmins(quantity)
+	_, adminList, err = getMultiblePersons(ADMIN, quantity)
 
 	if err != nil {
 		return err
