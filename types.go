@@ -67,3 +67,16 @@ type dockerContainer struct {
 	Image       string   `json:"image"`
 	Volumes     []string `json:"volume"`
 }
+
+type editUserRequest struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+}
+
+type person int
+
+const (
+	USER person = iota
+	ADMIN
+)

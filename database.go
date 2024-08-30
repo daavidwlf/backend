@@ -78,6 +78,36 @@ func connectDB() {
 	fmt.Println("Server: Succesfully connected to Database")
 }
 
+func editPerson(person person, id string, usr *editUserRequest, adm *editAdminRequest) (string, error) {
+
+	var result sql.Result
+	var err error
+
+	if person == USER {
+		result, err = db.Exec(`UPDATE users SET FirstName = ?, LastName = ?, Email = ? WHERE UserID = ?`, usr.FirstName, usr.LastName, usr.Email, id)
+	} else if person == ADMIN {
+		result, err = db.Exec(`UPDATE admins SET UserName = ?, Email = ? WHERE AdminID = ?`, adm.UserName, adm.Email, id)
+	} else {
+		return "", errors.New("invalid person type")
+	}
+
+	if err != nil {
+		return "", errors.New("error while updating db " + err.Error())
+	}
+
+	rowsAffected, err := result.RowsAffected()
+
+	if err != nil {
+		return "", errors.New("error while checking affected rows: " + err.Error())
+	}
+
+	if rowsAffected == 0 {
+		return "", errors.New("no rows affected")
+	}
+
+	return id, nil
+}
+
 func registerUser(usr registerUserRequest) error {
 
 	var mail string
@@ -221,38 +251,6 @@ func getMultibleAdmins(quantity int) (*[]admin, error) {
 
 	return &adminList, nil
 
-}
-
-func editAdmin(adminID string, edit *editAdminRequest) (*editAdminRequest, error) {
-
-	fmt.Println(adminID)
-
-	fmt.Println(edit.Email, edit.UserName)
-
-	result, err := db.Exec(`UPDATE admins SET Username = ?, Email = ? WHERE AdminID = ?`, edit.UserName, edit.Email, adminID)
-
-	if err != nil {
-		return nil, errors.New("error while updating db " + err.Error())
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, errors.New("error while checking affected rows: " + err.Error())
-	}
-
-	if rowsAffected == 0 {
-		return nil, errors.New("no rows affected")
-	}
-
-	err = db.QueryRow(`SELECT Username, Email FROM admins WHERE AdminID = ?`, adminID).Scan(&edit.UserName, &edit.Email)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("no admin found after update with the given AdminID")
-		}
-		return nil, errors.New("error while fetching updated admin: " + err.Error())
-	}
-
-	return edit, nil
 }
 
 func deleteAdmin(adminID string) error {

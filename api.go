@@ -164,6 +164,32 @@ func (server *Server) handleLoginUser(writer http.ResponseWriter, request *http.
 	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "X-JWT-Token": tokenString})
 }
 
+func (server *Server) handleEditUser(writer http.ResponseWriter, request *http.Request) error {
+	userID := mux.Vars(request)["ID"]
+
+	if userID == "" {
+		return errors.New("id invalid")
+	}
+
+	var editUsr editUserRequest
+
+	err := parseJSON(request, &editUsr)
+
+	if err != nil {
+		return errors.New("unable to parse json" + err.Error())
+	}
+
+	var usrID string
+
+	usrID, err = editPerson(USER, userID, &editUsr, nil)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully updated user  " + usrID})
+}
+
 func (server *Server) handleGetUserByID(writer http.ResponseWriter, request *http.Request) error {
 	reqID := mux.Vars(request)["ID"]
 
@@ -305,15 +331,15 @@ func (server *Server) handleEditAdmin(writer http.ResponseWriter, request *http.
 		return errors.New("unable to parse json" + err.Error())
 	}
 
-	var adm *editAdminRequest
+	var admID string
 
-	adm, err = editAdmin(adminID, &editAdm)
+	admID, err = editPerson(ADMIN, adminID, nil, &editAdm)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, adm)
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully updated user  " + admID})
 }
 
 func (server *Server) handleDeleteAdmin(writer http.ResponseWriter, request *http.Request) error {
