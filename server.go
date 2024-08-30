@@ -67,6 +67,7 @@ func (server *Server) run() {
 
 	router.HandleFunc("/user/{ID}", JWTAuth(handleError(server.handleGetUserByID))).Methods("GET", "OPTIONS")
 	router.HandleFunc("/users", JWTAuth(handleError(server.handleGetMultibleUsers))).Methods("GET", "OPTIONS")
+	router.HandleFunc("/user/search", JWTAuth(handleError(server.handleSearchUsers))).Methods("POST", "OPTIONS")
 
 	router.HandleFunc("/user/edit/{ID}", JWTAuth(handleError(server.handleEditUser))).Methods("POST", "OPTIONS")
 	router.HandleFunc("/user/delete/{ID}", JWTAuth(handleError(server.handleDeleteUser))).Methods("POST", "OPTIONS")

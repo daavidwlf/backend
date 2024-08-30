@@ -333,6 +333,27 @@ func (server *Server) handleDeleteUser(writer http.ResponseWriter, request *http
 	return writeJSON(writer, http.StatusOK, map[string]string{"message": "user " + userID + " deleted"})
 }
 
+func (server *Server) handleSearchUsers(writer http.ResponseWriter, request *http.Request) error {
+
+	var userSearchRequest *searchUserRequest
+
+	err := parseJSON(request, &userSearchRequest)
+
+	if err != nil {
+		return errors.New("unable to parse json " + err.Error())
+	}
+
+	var userList *[]user
+
+	userList, _, err = searchPersons(USER, userSearchRequest, nil)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, userList)
+}
+
 func (server *Server) handleGetMultibleAdmins(writer http.ResponseWriter, request *http.Request) error {
 	quantityParam := request.URL.Query().Get("quantity")
 

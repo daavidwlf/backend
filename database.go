@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -312,6 +313,43 @@ func deletePerson(person person, id string) error {
 	}
 
 	return err
+}
+
+func searchPersons(person person, usrRequest *searchUserRequest, _ *searchAdminRequest) (*[]user, *[]admin, error) {
+	var userList []user
+
+	var rows *sql.Rows
+	var err error
+
+	if person == USER {
+		rows, err = db.Query(`SELECT UserID, FirstName, LastName, Email, Created FROM users WHERE UserId = ? OR LOWER(FirstName) LIKE ? OR LOWER(LastName) LIKE ? OR LOWER(Email) LIKE ?`, usrRequest.ID, "%"+strings.ToLower(usrRequest.FirstName)+"%", "%"+strings.ToLower(usrRequest.LastName)+"%", "%"+strings.ToLower(usrRequest.Email)+"%")
+	} else {
+		return nil, nil, errors.New("invalid person type")
+	}
+
+	if err != nil {
+		return nil, nil, errors.New("unable to perform query " + err.Error())
+	}
+
+	defer rows.Close()
+
+	if person == USER {
+		for rows.Next() {
+			var current user
+
+			err := rows.Scan(&current.ID, &current.FirstName, &current.LastName, &current.Email, &current.Created)
+
+			if err != nil {
+				return nil, nil, errors.New("error while appending users " + err.Error())
+			}
+
+			userList = append(userList, current)
+		}
+
+		return &userList, nil, nil
+	}
+
+	return nil, nil, errors.New("unable to perform query " + err.Error())
 }
 
 func addAdmin(adm *addAdminRequest) (*admin, error) {
