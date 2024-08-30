@@ -66,6 +66,7 @@ func (server *Server) run() {
 	*/
 
 	router.HandleFunc("/user/{ID}", JWTAuth(handleError(server.handleGetUserByID))).Methods("GET", "OPTIONS")
+	router.HandleFunc("/user/edit/{ID}", JWTAuth(handleError(server.handleEditUser))).Methods("POST", "OPTIONS")
 
 	/*
 		admin routes for dashboard
@@ -80,9 +81,9 @@ func (server *Server) run() {
 
 	router.HandleFunc("/admin/{ID}", JWTAuth(handleError(server.handleGetAdminByID))).Methods("GET", "OPTIONS")
 	router.HandleFunc("/admins", JWTAuth(handleError(server.hanldeGetMultibleAdmins))).Methods("GET", "OPTIONS")
-	router.HandleFunc("/admins/edit/{ID}", JWTAuth(handleError(server.handleEditAdmin))).Methods("POST", "OPTIONS")
-	router.HandleFunc("/admins/delete/{ID}", JWTAuth(handleError(server.handleDeleteAdmin))).Methods("POST", "OPTIONS")
-	router.HandleFunc("/admins/add", JWTAuth(handleError(server.handleAddAdmin))).Methods("POST", "OPTIONS")
+	router.HandleFunc("/admin/edit/{ID}", JWTAuth(handleError(server.handleEditAdmin))).Methods("POST", "OPTIONS")
+	router.HandleFunc("/admin/delete/{ID}", JWTAuth(handleError(server.handleDeleteAdmin))).Methods("POST", "OPTIONS")
+	router.HandleFunc("/admin/add", JWTAuth(handleError(server.handleAddAdmin))).Methods("POST", "OPTIONS")
 
 	router.HandleFunc("/docker/containers", JWTAuth(handleError(server.handleGetDockerContainers))).Methods("GET", "OPTIONS")
 
