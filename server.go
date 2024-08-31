@@ -84,6 +84,8 @@ func (server *Server) run() {
 	router.HandleFunc("/admins/delete/{ID}", JWTAuth(handleError(server.handleDeleteAdmin))).Methods("POST", "OPTIONS")
 	router.HandleFunc("/admins/add", JWTAuth(handleError(server.handleAddAdmin))).Methods("POST", "OPTIONS")
 
+	router.HandleFunc("/docker/containers", JWTAuth(handleError(server.handleGetDockerContainers))).Methods("GET", "OPTIONS")
+
 	fmt.Println("Server: Running and Listening on port: ", server.adress)
 
 	serverhandler := &http.Server{
