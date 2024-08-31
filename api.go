@@ -312,3 +312,40 @@ func (server *Server) handleEditAdmin(writer http.ResponseWriter, request *http.
 
 	return writeJSON(writer, http.StatusOK, adm)
 }
+
+func (server *Server) handleDeleteAdmin(writer http.ResponseWriter, request *http.Request) error {
+	adminID := mux.Vars(request)["ID"]
+
+	if adminID == "" {
+		return errors.New("id invalid")
+	}
+
+	err := deleteAdmin(adminID)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "admin " + adminID + " deleted"})
+}
+
+func (server *Server) handleAddAdmin(writer http.ResponseWriter, request *http.Request) error {
+
+	var addAdm addAdminRequest
+
+	err := parseJSON(request, &addAdm)
+
+	if err != nil {
+		return errors.New("unable to parse json" + err.Error())
+	}
+
+	var newAdmin *admin
+
+	newAdmin, err = addAdmin(&addAdm)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "admin " + newAdmin.UserName + " successfullyy created"})
+}
