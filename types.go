@@ -67,3 +67,31 @@ type dockerContainer struct {
 	Image       string   `json:"image"`
 	Volumes     []string `json:"volume"`
 }
+
+type editUserRequest struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+}
+
+type searchUserRequest struct {
+	// ID this is a string so i won't throw an parse error when not searching with valid id
+	ID        string `json:"userId"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+}
+
+type searchAdminRequest struct {
+	// ID this is a string so i won't throw an parse error when not searching with valid id
+	ID       string `json:"userId"`
+	UserName string `json:"userName"`
+	Email    string `json:"email"`
+}
+
+type person int
+
+const (
+	USER person = iota
+	ADMIN
+)

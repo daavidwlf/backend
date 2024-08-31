@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -76,6 +77,96 @@ func connectDB() {
 	}
 
 	fmt.Println("Server: Succesfully connected to Database")
+}
+
+func editPerson(person person, id string, usr *editUserRequest, adm *editAdminRequest) (string, error) {
+
+	var result sql.Result
+	var err error
+
+	switch person {
+	case USER:
+		result, err = db.Exec(`UPDATE users SET FirstName = ?, LastName = ?, Email = ? WHERE UserID = ?`, usr.FirstName, usr.LastName, usr.Email, id)
+	case ADMIN:
+		result, err = db.Exec(`UPDATE admins SET UserName = ?, Email = ? WHERE AdminID = ?`, adm.UserName, adm.Email, id)
+	default:
+		return "", errors.New("invalid person type")
+	}
+
+	if err != nil {
+		return "", errors.New("error while updating db " + err.Error())
+	}
+
+	rowsAffected, err := result.RowsAffected()
+
+	if err != nil {
+		return "", errors.New("error while checking affected rows: " + err.Error())
+	}
+
+	if rowsAffected == 0 {
+		return "", errors.New("no rows affected")
+	}
+
+	return id, nil
+}
+
+func getMultiblePersons(person person, quantity int) (*[]user, *[]admin, error) {
+
+	var adminList []admin
+	var userList []user
+
+	var rows *sql.Rows
+	var err error
+
+	switch person {
+	case USER:
+		rows, err = db.Query(`SELECT UserID, FirstName, LastName, Email, Created FROM users LIMIT ?`, quantity)
+	case ADMIN:
+		rows, err = db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
+	default:
+		return nil, nil, errors.New("invalid person type")
+	}
+
+	if err != nil {
+		return nil, nil, errors.New("unable to perform query " + err.Error())
+	}
+
+	defer rows.Close()
+
+	if person == USER {
+		for rows.Next() {
+			var current user
+
+			err := rows.Scan(&current.ID, &current.FirstName, &current.LastName, &current.Email, &current.Created)
+
+			if err != nil {
+				return nil, nil, errors.New("error while appending users " + err.Error())
+			}
+
+			userList = append(userList, current)
+		}
+
+		return &userList, nil, nil
+	}
+
+	if person == ADMIN {
+		for rows.Next() {
+			var current admin
+
+			err := rows.Scan(&current.ID, &current.Email, &current.UserName, &current.Created)
+
+			if err != nil {
+				return nil, nil, errors.New("error while appending admins " + err.Error())
+			}
+
+			adminList = append(adminList, current)
+		}
+
+		return nil, &adminList, nil
+	}
+
+	return nil, nil, errors.New("invalid person type")
+
 }
 
 func registerUser(usr registerUserRequest) error {
@@ -196,67 +287,19 @@ func getAdminByID(admID string) (*admin, error) {
 	return &adm, nil
 }
 
-func getMultibleAdmins(quantity int) (*[]admin, error) {
-	var adminList []admin
+func deletePerson(person person, id string) error {
 
-	rows, err := db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
+	var result sql.Result
+	var err error
 
-	if err != nil {
-		return nil, errors.New("unable to get admins " + err.Error())
+	switch person {
+	case USER:
+		result, err = db.Exec(`DELETE FROM users WHERE UserID = ?`, id)
+	case ADMIN:
+		result, err = db.Exec(`DELETE FROM admins WHERE AdminID = ?`, id)
+	default:
+		return errors.New("invalid person type")
 	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var current admin
-
-		err := rows.Scan(&current.ID, &current.Email, &current.UserName, &current.Created)
-
-		if err != nil {
-			return nil, errors.New("error while appending admins " + err.Error())
-		}
-
-		adminList = append(adminList, current)
-	}
-
-	return &adminList, nil
-
-}
-
-func editAdmin(adminID string, edit *editAdminRequest) (*editAdminRequest, error) {
-
-	fmt.Println(adminID)
-
-	fmt.Println(edit.Email, edit.UserName)
-
-	result, err := db.Exec(`UPDATE admins SET Username = ?, Email = ? WHERE AdminID = ?`, edit.UserName, edit.Email, adminID)
-
-	if err != nil {
-		return nil, errors.New("error while updating db " + err.Error())
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, errors.New("error while checking affected rows: " + err.Error())
-	}
-
-	if rowsAffected == 0 {
-		return nil, errors.New("no rows affected")
-	}
-
-	err = db.QueryRow(`SELECT Username, Email FROM admins WHERE AdminID = ?`, adminID).Scan(&edit.UserName, &edit.Email)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("no admin found after update with the given AdminID")
-		}
-		return nil, errors.New("error while fetching updated admin: " + err.Error())
-	}
-
-	return edit, nil
-}
-
-func deleteAdmin(adminID string) error {
-	result, err := db.Exec(`DELETE FROM admins WHERE AdminID = ?`, adminID)
 
 	if err != nil {
 		return errors.New("error while deleting db " + err.Error())
@@ -275,6 +318,43 @@ func deleteAdmin(adminID string) error {
 	return err
 }
 
+func searchPersons(person person, usrRequest *searchUserRequest, _ *searchAdminRequest) (*[]user, *[]admin, error) {
+	var userList []user
+
+	var rows *sql.Rows
+	var err error
+
+	if person == USER {
+		rows, err = db.Query(`SELECT UserID, FirstName, LastName, Email, Created FROM users WHERE UserId = ? OR LOWER(FirstName) LIKE ? OR LOWER(LastName) LIKE ? OR LOWER(Email) LIKE ?`, usrRequest.ID, "%"+strings.ToLower(usrRequest.FirstName)+"%", "%"+strings.ToLower(usrRequest.LastName)+"%", "%"+strings.ToLower(usrRequest.Email)+"%")
+	} else {
+		return nil, nil, errors.New("invalid person type")
+	}
+
+	if err != nil {
+		return nil, nil, errors.New("unable to perform query " + err.Error())
+	}
+
+	defer rows.Close()
+
+	if person == USER {
+		for rows.Next() {
+			var current user
+
+			err := rows.Scan(&current.ID, &current.FirstName, &current.LastName, &current.Email, &current.Created)
+
+			if err != nil {
+				return nil, nil, errors.New("error while appending users " + err.Error())
+			}
+
+			userList = append(userList, current)
+		}
+
+		return &userList, nil, nil
+	}
+
+	return nil, nil, errors.New("unable to perform query " + err.Error())
+}
+
 func addAdmin(adm *addAdminRequest) (*admin, error) {
 	var mail string
 
@@ -288,7 +368,7 @@ func addAdmin(adm *addAdminRequest) (*admin, error) {
 		return nil, errors.New("couldn't execute admin search in database: " + err.Error())
 	}
 
-	// create new user
+	// create new admin
 	var newAdmin admin
 	var IDerr error
 	newAdmin.ID, IDerr = uuid.NewUUID()

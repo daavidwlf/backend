@@ -164,6 +164,32 @@ func (server *Server) handleLoginUser(writer http.ResponseWriter, request *http.
 	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "X-JWT-Token": tokenString})
 }
 
+func (server *Server) handleEditUser(writer http.ResponseWriter, request *http.Request) error {
+	userID := mux.Vars(request)["ID"]
+
+	if userID == "" {
+		return errors.New("id invalid")
+	}
+
+	var editUsr editUserRequest
+
+	err := parseJSON(request, &editUsr)
+
+	if err != nil {
+		return errors.New("unable to parse json" + err.Error())
+	}
+
+	var usrID string
+
+	usrID, err = editPerson(USER, userID, &editUsr, nil)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully updated user  " + usrID})
+}
+
 func (server *Server) handleGetUserByID(writer http.ResponseWriter, request *http.Request) error {
 	reqID := mux.Vars(request)["ID"]
 
@@ -265,11 +291,75 @@ func (server *Server) handleGetAdminByID(writer http.ResponseWriter, request *ht
 	return writeJSON(writer, http.StatusOK, adm)
 }
 
-func (server *Server) hanldeGetMultibleAdmins(writer http.ResponseWriter, request *http.Request) error {
+func (server *Server) handleGetMultibleUsers(writer http.ResponseWriter, request *http.Request) error {
 	quantityParam := request.URL.Query().Get("quantity")
 
 	var quantity int
 	var err error
+
+	if quantityParam != "" {
+		quantity, err = strconv.Atoi(quantityParam)
+
+		if err != nil {
+			return errors.New("unable to parse quantity")
+		}
+	} else {
+		quantity = 10
+	}
+
+	var userList *[]user
+	userList, _, err = getMultiblePersons(USER, quantity)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, userList)
+}
+
+func (server *Server) handleDeleteUser(writer http.ResponseWriter, request *http.Request) error {
+	userID := mux.Vars(request)["ID"]
+
+	if userID == "" {
+		return errors.New("id invalid")
+	}
+
+	err := deletePerson(USER, userID)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "user " + userID + " deleted"})
+}
+
+func (server *Server) handleSearchUsers(writer http.ResponseWriter, request *http.Request) error {
+
+	var userSearchRequest *searchUserRequest
+
+	err := parseJSON(request, &userSearchRequest)
+
+	if err != nil {
+		return errors.New("unable to parse json " + err.Error())
+	}
+
+	var userList *[]user
+
+	userList, _, err = searchPersons(USER, userSearchRequest, nil)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, userList)
+}
+
+func (server *Server) handleGetMultibleAdmins(writer http.ResponseWriter, request *http.Request) error {
+	quantityParam := request.URL.Query().Get("quantity")
+
+	var quantity int
+	var err error
+
 	if quantityParam != "" {
 		quantity, err = strconv.Atoi(quantityParam)
 
@@ -280,7 +370,7 @@ func (server *Server) hanldeGetMultibleAdmins(writer http.ResponseWriter, reques
 		quantity = 10
 	}
 	var adminList *[]admin
-	adminList, err = getMultibleAdmins(quantity)
+	_, adminList, err = getMultiblePersons(ADMIN, quantity)
 
 	if err != nil {
 		return err
@@ -305,15 +395,15 @@ func (server *Server) handleEditAdmin(writer http.ResponseWriter, request *http.
 		return errors.New("unable to parse json" + err.Error())
 	}
 
-	var adm *editAdminRequest
+	var admID string
 
-	adm, err = editAdmin(adminID, &editAdm)
+	admID, err = editPerson(ADMIN, adminID, nil, &editAdm)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, adm)
+	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully updated user  " + admID})
 }
 
 func (server *Server) handleDeleteAdmin(writer http.ResponseWriter, request *http.Request) error {
@@ -323,7 +413,7 @@ func (server *Server) handleDeleteAdmin(writer http.ResponseWriter, request *htt
 		return errors.New("id invalid")
 	}
 
-	err := deleteAdmin(adminID)
+	err := deletePerson(ADMIN, adminID)
 
 	if err != nil {
 		return err
