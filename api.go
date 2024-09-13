@@ -207,11 +207,20 @@ func (server *Server) handleGetUserByID(writer http.ResponseWriter, request *htt
 }
 
 func (server *Server) handleLoginAdmin(writer http.ResponseWriter, request *http.Request) error {
+
 	var adm loginAdminRequest
 	err := parseJSON(request, &adm)
 
 	if err != nil {
 		return err
+	}
+
+	ip := request.RemoteAddr
+
+	blocked := trackLoginAttempt(ip, adm.Email)
+
+	if blocked {
+		return errors.New("too many requests")
 	}
 
 	var admID string

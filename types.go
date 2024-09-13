@@ -1,6 +1,10 @@
 package main
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 /*
 	variables must start with CAPITIAL letters otherwise they won't be exported when marashalling json!
@@ -96,3 +100,10 @@ const (
 	USER person = iota
 	ADMIN
 )
+
+type loginAttemptInfo struct {
+	attemptCount int
+	lastAttempt  time.Time
+	blockedUntil time.Time
+	ipAttempts   map[string]int
+}
