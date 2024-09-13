@@ -9,7 +9,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/docker/docker/api/types/container"
+	containerTypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
@@ -455,7 +455,7 @@ func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, _ *h
 	// set client version to docker deamon version
 	cli.NegotiateAPIVersion(context.Background())
 
-	runningContainers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
+	runningContainers, err := cli.ContainerList(context.Background(), containerTypes.ListOptions{All: true})
 
 	if err != nil {
 		return errors.New("failed to list docker options: " + err.Error())
@@ -465,6 +465,30 @@ func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, _ *h
 
 	for _, container := range runningContainers {
 		var current dockerContainer
+
+		options := containerTypes.LogsOptions{
+			ShowStdout: true,
+			ShowStderr: true,
+			Follow:     false,
+			// only 50 newest lines get read out
+			Tail: "50",
+		}
+
+		logs, err := cli.ContainerLogs(context.Background(), container.ID, options)
+
+		if err != nil {
+			return errors.New("unable to read conatiner logs: " + err.Error())
+		}
+
+		defer logs.Close()
+
+		logsArray, err := parseLogs(logs)
+
+		if err != nil {
+			return errors.New("unable to parse logs: " + err.Error())
+		}
+
+		current.Logs = logsArray
 
 		if len(container.Names) > 0 {
 			current.Name = container.Names[0]

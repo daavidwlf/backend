@@ -66,6 +66,7 @@ type dockerContainer struct {
 	Status      string   `json:"status"`
 	Image       string   `json:"image"`
 	Volumes     []string `json:"volume"`
+	Logs        []string `json:"logs"`
 }
 
 type editUserRequest struct {
