@@ -1,28 +1,31 @@
-package main
+package customTypes
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-/*
-	variables must start with CAPITIAL letters otherwise they won't be exported when marashalling json!
-*/
+type ApiFunction func(http.ResponseWriter, *http.Request) error
 
-type loginUserRequest struct {
+type Server struct {
+	Adress string
+}
+
+type LoginUserRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-type registerUserRequest struct {
+type RegisterUserRequest struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 }
 
-type user struct {
+type User struct {
 	ID        uuid.UUID `json:"userId"`
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
@@ -31,17 +34,17 @@ type user struct {
 	Created   int       `json:"created"`
 }
 
-type loginAdminRequest struct {
+type LoginAdminRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-type validateJWTRequest struct {
+type ValidateJWTRequest struct {
 	Token string `json:"xJwtToken"`
 	ID    string `json:"adminId"`
 }
 
-type admin struct {
+type Admin struct {
 	ID       uuid.UUID `json:"adminId"`
 	UserName string    `json:"userName"`
 	Email    string    `json:"email"`
@@ -49,18 +52,18 @@ type admin struct {
 	Created  int       `json:"created"`
 }
 
-type editAdminRequest struct {
+type EditAdminRequest struct {
 	UserName string `json:"userName"`
 	Email    string `json:"email"`
 }
 
-type addAdminRequest struct {
+type AddAdminRequest struct {
 	UserName string `json:"userName"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-type dockerContainer struct {
+type DockerContainer struct {
 	Name        string   `json:"name"`
 	PublicPort  uint16   `json:"publicPort"`
 	PrivatePort uint16   `json:"privatePort"`
@@ -73,13 +76,13 @@ type dockerContainer struct {
 	Logs        []string `json:"logs"`
 }
 
-type editUserRequest struct {
+type EditUserRequest struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
 }
 
-type searchUserRequest struct {
+type SearchUserRequest struct {
 	// ID this is a string so i won't throw an parse error when not searching with valid id
 	ID        string `json:"userId"`
 	FirstName string `json:"firstName"`
@@ -87,23 +90,23 @@ type searchUserRequest struct {
 	Email     string `json:"email"`
 }
 
-type searchAdminRequest struct {
+type SearchAdminRequest struct {
 	// ID this is a string so i won't throw an parse error when not searching with valid id
 	ID       string `json:"userId"`
 	UserName string `json:"userName"`
 	Email    string `json:"email"`
 }
 
-type person int
+type Person int
 
 const (
-	USER person = iota
+	USER Person = iota
 	ADMIN
 )
 
-type loginAttemptInfo struct {
-	attemptCount int
-	lastAttempt  time.Time
-	blockedUntil time.Time
-	ipAttempts   map[string]int
+type LoginAttemptInfo struct {
+	AttemptCount int
+	LastAttempt  time.Time
+	BlockedUntil time.Time
+	IpAttempts   map[string]int
 }

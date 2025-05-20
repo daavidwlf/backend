@@ -1,6 +1,9 @@
-package main
+package api
 
 import (
+	"backend/src/db"
+	customTypes "backend/src/types"
+	"backend/src/utils"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,11 +18,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// type for api functions
-type apiFunction func(http.ResponseWriter, *http.Request) error
-
 // function to write JSON
-func writeJSON(writer http.ResponseWriter, statusCode int, content any) error {
+func WriteJSON(writer http.ResponseWriter, statusCode int, content any) error {
 	/*
 		This order of commands is mandatory!
 	*/
@@ -29,7 +29,7 @@ func writeJSON(writer http.ResponseWriter, statusCode int, content any) error {
 }
 
 // function to parse JSONs
-func parseJSON(request *http.Request, content any) error {
+func ParseJSON(request *http.Request, content any) error {
 	if request.Body == nil {
 		return errors.New("body of request is nil")
 	}
@@ -38,10 +38,20 @@ func parseJSON(request *http.Request, content any) error {
 }
 
 // function to writer error in a consistent format
-func writeError(writer http.ResponseWriter, statusCode int, errmsg error) {
-	err := writeJSON(writer, statusCode, map[string]string{"message": errmsg.Error()})
+func WriteError(writer http.ResponseWriter, statusCode int, errmsg error) {
+	err := WriteJSON(writer, statusCode, map[string]string{"message": errmsg.Error()})
 	if err != nil {
 		fmt.Println("Server: Error ocurred: ", err.Error())
+	}
+}
+
+func HandleError(function customTypes.ApiFunction) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		err := function(writer, request)
+		if err != nil {
+			fmt.Println("Server: Error ocurred: ", err.Error())
+			WriteError(writer, http.StatusBadRequest, err)
+		}
 	}
 }
 
@@ -51,10 +61,10 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 
 		tokenString := request.Header.Get("xJwtToken")
 
-		token, err := validateJWT(tokenString)
+		token, err := ValidateJWT(tokenString)
 
 		if err != nil {
-			err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			err := WriteJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
 			if err != nil {
 				fmt.Println("Server: Error ocurred: ", err.Error())
 			}
@@ -62,7 +72,7 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !token.Valid {
-			err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
+			err := WriteJSON(writer, http.StatusForbidden, map[string]string{"message": "permission denied"})
 			if err != nil {
 				fmt.Println("Server: Error ocurred: ", err.Error())
 			}
@@ -74,7 +84,7 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 		reqID := request.Header.Get("ID")
 
 		if reqID != claims["ID"] {
-			err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "invalid token"})
+			err := WriteJSON(writer, http.StatusForbidden, map[string]string{"message": "invalid token"})
 			if err != nil {
 				fmt.Println("Server: Error ocurred: ", err.Error())
 			}
@@ -85,7 +95,7 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func validateJWT(tokenString string) (*jwt.Token, error) {
+func ValidateJWT(tokenString string) (*jwt.Token, error) {
 
 	secret := os.Getenv("JWT_SECRET")
 
@@ -99,7 +109,7 @@ func validateJWT(tokenString string) (*jwt.Token, error) {
 	})
 }
 
-func createJWT(usrID string) (string, error) {
+func CreateJWT(usrID string) (string, error) {
 	claims := &jwt.MapClaims{
 		"expiresAt": 15000,
 		"ID":        usrID,
@@ -118,62 +128,62 @@ func createJWT(usrID string) (string, error) {
 
 */
 
-func (server *Server) handleGetBier(writer http.ResponseWriter, _ *http.Request) error {
-	return writeJSON(writer, http.StatusOK, "Bier")
+func HandleGetBier(writer http.ResponseWriter, _ *http.Request) error {
+	return WriteJSON(writer, http.StatusOK, "Bier")
 }
 
-func (server *Server) handleRegisterUser(writer http.ResponseWriter, request *http.Request) error {
-	var userStruct registerUserRequest
-	err := parseJSON(request, &userStruct)
+func HandleRegisterUser(writer http.ResponseWriter, request *http.Request) error {
+	var userStruct customTypes.RegisterUserRequest
+	err := ParseJSON(request, &userStruct)
 
 	if err != nil {
 		return err
 	}
 
-	err = registerUser(userStruct)
+	err = db.RegisterUser(userStruct)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully created user"})
+	return WriteJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully created user"})
 }
 
-func (server *Server) handleLoginUser(writer http.ResponseWriter, request *http.Request) error {
-	var usr loginUserRequest
-	err := parseJSON(request, &usr)
+func HandleLoginUser(writer http.ResponseWriter, request *http.Request) error {
+	var usr customTypes.LoginUserRequest
+	err := ParseJSON(request, &usr)
 
 	if err != nil {
 		return err
 	}
 
 	var usrID string
-	usrID, err = loginUser(usr)
+	usrID, err = db.LoginUser(usr)
 
 	if err != nil {
 		return err
 	}
 
 	// create jwt token when user logs in
-	tokenString, err := createJWT(usrID)
+	tokenString, err := CreateJWT(usrID)
 
 	if err != nil {
 		return errors.New("error while creating jwt token uuid: " + err.Error())
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "X-JWT-Token": tokenString})
+	return WriteJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "X-JWT-Token": tokenString})
 }
 
-func (server *Server) handleEditUser(writer http.ResponseWriter, request *http.Request) error {
+func HandleEditUser(writer http.ResponseWriter, request *http.Request) error {
 	userID := mux.Vars(request)["ID"]
 
 	if userID == "" {
 		return errors.New("id invalid")
 	}
 
-	var editUsr editUserRequest
+	var editUsr customTypes.EditUserRequest
 
-	err := parseJSON(request, &editUsr)
+	err := ParseJSON(request, &editUsr)
 
 	if err != nil {
 		return errors.New("unable to parse json" + err.Error())
@@ -181,35 +191,35 @@ func (server *Server) handleEditUser(writer http.ResponseWriter, request *http.R
 
 	var usrID string
 
-	usrID, err = editPerson(USER, userID, &editUsr, nil)
+	usrID, err = db.EditPerson(customTypes.USER, userID, &editUsr, nil)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully updated user  " + usrID})
+	return WriteJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully updated user  " + usrID})
 }
 
-func (server *Server) handleGetUserByID(writer http.ResponseWriter, request *http.Request) error {
+func HandleGetUserByID(writer http.ResponseWriter, request *http.Request) error {
 	reqID := mux.Vars(request)["ID"]
 
 	if reqID == "" {
 		return errors.New("invalid ID")
 	}
 
-	usr, err := getUserByID(reqID)
+	usr, err := db.GetUserByID(reqID)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, usr)
+	return WriteJSON(writer, http.StatusOK, usr)
 }
 
-func (server *Server) handleLoginAdmin(writer http.ResponseWriter, request *http.Request) error {
+func HandleLoginAdmin(writer http.ResponseWriter, request *http.Request) error {
 
-	var adm loginAdminRequest
-	err := parseJSON(request, &adm)
+	var adm customTypes.LoginAdminRequest
+	err := ParseJSON(request, &adm)
 
 	if err != nil {
 		return err
@@ -217,35 +227,35 @@ func (server *Server) handleLoginAdmin(writer http.ResponseWriter, request *http
 
 	ip := request.RemoteAddr
 
-	blocked := trackLoginAttempt(ip, adm.Email)
+	blocked := utils.TrackLoginAttempt(ip, adm.Email)
 
 	if blocked {
 		return errors.New("too many requests")
 	}
 
 	var admID string
-	admID, err = loginAdmin(adm)
+	admID, err = db.LoginAdmin(adm)
 
 	if err != nil {
 		return err
 	}
 
 	// create jwt token when admin logs in
-	tokenString, err := createJWT(admID)
+	tokenString, err := CreateJWT(admID)
 
 	if err != nil {
 		return errors.New("error while creating jwt token uuid: " + err.Error())
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "xJwtToken": tokenString, "adminId": admID})
+	return WriteJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully Logged in", "xJwtToken": tokenString, "adminId": admID})
 }
 
-func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request *http.Request) error {
-	var jwtRequest validateJWTRequest
-	err := parseJSON(request, &jwtRequest)
+func HandleValidateAdminJWT(writer http.ResponseWriter, request *http.Request) error {
+	var jwtRequest customTypes.ValidateJWTRequest
+	err := ParseJSON(request, &jwtRequest)
 
 	if err != nil {
-		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Ainvalid token" + err.Error()})
+		err := WriteJSON(writer, http.StatusForbidden, map[string]string{"message": "Ainvalid token" + err.Error()})
 		if err != nil {
 			fmt.Println("Server: Error ocurred: ", err.Error())
 		}
@@ -253,10 +263,10 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 	}
 
 	var token *jwt.Token
-	token, err = validateJWT(jwtRequest.Token)
+	token, err = ValidateJWT(jwtRequest.Token)
 
 	if err != nil {
-		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Binvalid token"})
+		err := WriteJSON(writer, http.StatusForbidden, map[string]string{"message": "Binvalid token"})
 		if err != nil {
 			fmt.Println("Server: Error ocurred: ", err.Error())
 		}
@@ -264,7 +274,7 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 	}
 
 	if !token.Valid {
-		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Cinvalid token"})
+		err := WriteJSON(writer, http.StatusForbidden, map[string]string{"message": "Cinvalid token"})
 		if err != nil {
 			fmt.Println("Server: Error ocurred: ", err.Error())
 		}
@@ -274,33 +284,33 @@ func (server *Server) handleValidateAdminJWT(writer http.ResponseWriter, request
 	claims, _ := token.Claims.(jwt.MapClaims)
 
 	if jwtRequest.ID != claims["ID"] {
-		err := writeJSON(writer, http.StatusForbidden, map[string]string{"message": "Dinvalid token"})
+		err := WriteJSON(writer, http.StatusForbidden, map[string]string{"message": "Dinvalid token"})
 		if err != nil {
 			fmt.Println("Server: Error ocurred: ", err.Error())
 		}
 		return nil
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "valid token"})
+	return WriteJSON(writer, http.StatusOK, map[string]string{"message": "valid token"})
 }
 
-func (server *Server) handleGetAdminByID(writer http.ResponseWriter, request *http.Request) error {
+func HandleGetAdminByID(writer http.ResponseWriter, request *http.Request) error {
 	reqID := mux.Vars(request)["ID"]
 
 	if reqID == "" {
 		return errors.New("asinvalid ID")
 	}
 
-	adm, err := getAdminByID(reqID)
+	adm, err := db.GetAdminByID(reqID)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, adm)
+	return WriteJSON(writer, http.StatusOK, adm)
 }
 
-func (server *Server) handleGetMultibleUsers(writer http.ResponseWriter, request *http.Request) error {
+func HandleGetMultibleUsers(writer http.ResponseWriter, request *http.Request) error {
 	quantityParam := request.URL.Query().Get("quantity")
 
 	var quantity int
@@ -316,54 +326,54 @@ func (server *Server) handleGetMultibleUsers(writer http.ResponseWriter, request
 		quantity = 10
 	}
 
-	var userList *[]user
-	userList, _, err = getMultiblePersons(USER, quantity)
+	var userList *[]customTypes.User
+	userList, _, err = db.GetMultiblePersons(customTypes.USER, quantity)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, userList)
+	return WriteJSON(writer, http.StatusOK, userList)
 }
 
-func (server *Server) handleDeleteUser(writer http.ResponseWriter, request *http.Request) error {
+func HandleDeleteUser(writer http.ResponseWriter, request *http.Request) error {
 	userID := mux.Vars(request)["ID"]
 
 	if userID == "" {
 		return errors.New("id invalid")
 	}
 
-	err := deletePerson(USER, userID)
+	err := db.DeletePerson(customTypes.USER, userID)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "user " + userID + " deleted"})
+	return WriteJSON(writer, http.StatusOK, map[string]string{"message": "user " + userID + " deleted"})
 }
 
-func (server *Server) handleSearchUsers(writer http.ResponseWriter, request *http.Request) error {
+func HandleSearchUsers(writer http.ResponseWriter, request *http.Request) error {
 
-	var userSearchRequest *searchUserRequest
+	var userSearchRequest *customTypes.SearchUserRequest
 
-	err := parseJSON(request, &userSearchRequest)
+	err := ParseJSON(request, &userSearchRequest)
 
 	if err != nil {
 		return errors.New("unable to parse json " + err.Error())
 	}
 
-	var userList *[]user
+	var userList *[]customTypes.User
 
-	userList, _, err = searchPersons(USER, userSearchRequest, nil)
+	userList, _, err = db.SearchPersons(customTypes.USER, userSearchRequest, nil)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, userList)
+	return WriteJSON(writer, http.StatusOK, userList)
 }
 
-func (server *Server) handleGetMultibleAdmins(writer http.ResponseWriter, request *http.Request) error {
+func HandleGetMultibleAdmins(writer http.ResponseWriter, request *http.Request) error {
 	quantityParam := request.URL.Query().Get("quantity")
 
 	var quantity int
@@ -378,17 +388,17 @@ func (server *Server) handleGetMultibleAdmins(writer http.ResponseWriter, reques
 	} else {
 		quantity = 10
 	}
-	var adminList *[]admin
-	_, adminList, err = getMultiblePersons(ADMIN, quantity)
+	var adminList *[]customTypes.Admin
+	_, adminList, err = db.GetMultiblePersons(customTypes.ADMIN, quantity)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, adminList)
+	return WriteJSON(writer, http.StatusOK, adminList)
 }
 
-func (server *Server) handleEditAdmin(writer http.ResponseWriter, request *http.Request) error {
+func HandleEditAdmin(writer http.ResponseWriter, request *http.Request) error {
 
 	adminID := mux.Vars(request)["ID"]
 
@@ -396,9 +406,9 @@ func (server *Server) handleEditAdmin(writer http.ResponseWriter, request *http.
 		return errors.New("id invalid")
 	}
 
-	var editAdm editAdminRequest
+	var editAdm customTypes.EditAdminRequest
 
-	err := parseJSON(request, &editAdm)
+	err := ParseJSON(request, &editAdm)
 
 	if err != nil {
 		return errors.New("unable to parse json" + err.Error())
@@ -406,53 +416,53 @@ func (server *Server) handleEditAdmin(writer http.ResponseWriter, request *http.
 
 	var admID string
 
-	admID, err = editPerson(ADMIN, adminID, nil, &editAdm)
+	admID, err = db.EditPerson(customTypes.ADMIN, adminID, nil, &editAdm)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully updated user  " + admID})
+	return WriteJSON(writer, http.StatusOK, map[string]string{"message": "Sucessfully updated user  " + admID})
 }
 
-func (server *Server) handleDeleteAdmin(writer http.ResponseWriter, request *http.Request) error {
+func HandleDeleteAdmin(writer http.ResponseWriter, request *http.Request) error {
 	adminID := mux.Vars(request)["ID"]
 
 	if adminID == "" {
 		return errors.New("id invalid")
 	}
 
-	err := deletePerson(ADMIN, adminID)
+	err := db.DeletePerson(customTypes.ADMIN, adminID)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "admin " + adminID + " deleted"})
+	return WriteJSON(writer, http.StatusOK, map[string]string{"message": "admin " + adminID + " deleted"})
 }
 
-func (server *Server) handleAddAdmin(writer http.ResponseWriter, request *http.Request) error {
+func HandleAddAdmin(writer http.ResponseWriter, request *http.Request) error {
 
-	var addAdm addAdminRequest
+	var addAdm customTypes.AddAdminRequest
 
-	err := parseJSON(request, &addAdm)
+	err := ParseJSON(request, &addAdm)
 
 	if err != nil {
 		return errors.New("unable to parse json" + err.Error())
 	}
 
-	var newAdmin *admin
+	var newAdmin *customTypes.Admin
 
-	newAdmin, err = addAdmin(&addAdm)
+	newAdmin, err = db.AddAdmin(&addAdm)
 
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"message": "admin " + newAdmin.UserName + " successfullyy created"})
+	return WriteJSON(writer, http.StatusOK, map[string]string{"message": "admin " + newAdmin.UserName + " successfullyy created"})
 }
 
-func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, _ *http.Request) error {
+func HandleGetDockerContainers(writer http.ResponseWriter, _ *http.Request) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 
 	if err != nil {
@@ -470,10 +480,10 @@ func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, _ *h
 		return errors.New("failed to list docker options: " + err.Error())
 	}
 
-	containers := make([]dockerContainer, 0, len(runningContainers))
+	containers := make([]customTypes.DockerContainer, 0, len(runningContainers))
 
 	for _, container := range runningContainers {
-		var current dockerContainer
+		var current customTypes.DockerContainer
 
 		options := containerTypes.LogsOptions{
 			ShowStdout: true,
@@ -491,7 +501,7 @@ func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, _ *h
 
 		defer logs.Close()
 
-		logsArray, err := parseLogs(logs)
+		logsArray, err := utils.ParseLogs(logs)
 
 		if err != nil {
 			return errors.New("unable to parse logs: " + err.Error())
@@ -531,5 +541,5 @@ func (server *Server) handleGetDockerContainers(writer http.ResponseWriter, _ *h
 		containers = append(containers, current)
 	}
 
-	return writeJSON(writer, http.StatusOK, containers)
+	return WriteJSON(writer, http.StatusOK, containers)
 }

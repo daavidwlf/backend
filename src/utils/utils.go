@@ -1,6 +1,7 @@
-package main
+package utils
 
 import (
+	customTypes "backend/src/types"
 	"bufio"
 	"errors"
 	"io"
@@ -8,7 +9,7 @@ import (
 	"time"
 )
 
-func parseLogs(logs io.Reader) ([]string, error) {
+func ParseLogs(logs io.Reader) ([]string, error) {
 	var logsArray []string
 
 	scanner := bufio.NewScanner(logs)
@@ -34,59 +35,59 @@ const (
 	cleanupInterval  = 1 * time.Minute // interval for cleanup of expired entries
 )
 
-var loginAttempts = make(map[string]*loginAttemptInfo)
+var loginAttempts = make(map[string]*customTypes.LoginAttemptInfo)
 var mu sync.Mutex
 
 var lastCleanup = time.Now()
 
-func cleanupOldAttempts(now time.Time) {
+func CleanupOldAttempts(now time.Time) {
 	for id, info := range loginAttempts {
-		if now.Sub(info.lastAttempt) > windowDuration {
+		if now.Sub(info.LastAttempt) > windowDuration {
 			delete(loginAttempts, id)
 		}
 	}
 	lastCleanup = now
 }
 
-func trackLoginAttempt(username, ip string) bool {
+func TrackLoginAttempt(username, ip string) bool {
 	mu.Lock()
 	defer mu.Unlock()
 
 	now := time.Now()
 
 	if now.Sub(lastCleanup) > cleanupInterval {
-		cleanupOldAttempts(now)
+		CleanupOldAttempts(now)
 	}
 
 	info, exists := loginAttempts[username]
 	if !exists {
-		info = &loginAttemptInfo{
-			attemptCount: 0,
-			lastAttempt:  now,
-			ipAttempts:   make(map[string]int),
+		info = &customTypes.LoginAttemptInfo{
+			AttemptCount: 0,
+			LastAttempt:  now,
+			IpAttempts:   make(map[string]int),
 		}
 		loginAttempts[username] = info
 	}
 
-	if now.Sub(info.lastAttempt) > windowDuration {
-		info.attemptCount = 0
+	if now.Sub(info.LastAttempt) > windowDuration {
+		info.AttemptCount = 0
 	}
 
-	if info.blockedUntil.After(now) {
+	if info.BlockedUntil.After(now) {
 		return true
 	}
 
-	info.attemptCount++
-	info.lastAttempt = now
+	info.AttemptCount++
+	info.LastAttempt = now
 
-	info.ipAttempts[ip]++
-	if info.attemptCount >= maxAttempts {
-		info.blockedUntil = now.Add(blockDuration)
+	info.IpAttempts[ip]++
+	if info.AttemptCount >= maxAttempts {
+		info.BlockedUntil = now.Add(blockDuration)
 	}
 
-	if info.ipAttempts[ip] >= maxAttemptsPerIP {
+	if info.IpAttempts[ip] >= maxAttemptsPerIP {
 		return true
 	}
 
-	return info.blockedUntil.After(now)
+	return info.BlockedUntil.After(now)
 }

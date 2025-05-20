@@ -1,6 +1,7 @@
-package main
+package db
 
 import (
+	customTypes "backend/src/types"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -16,7 +17,7 @@ import (
 
 var db *sql.DB
 
-func connectDB() {
+func ConnectDB() {
 
 	dbPort := os.Getenv("DB_PORT")
 	dbUser := os.Getenv("DB_USER")
@@ -79,15 +80,15 @@ func connectDB() {
 	fmt.Println("Server: Succesfully connected to Database")
 }
 
-func editPerson(person person, id string, usr *editUserRequest, adm *editAdminRequest) (string, error) {
+func EditPerson(person customTypes.Person, id string, usr *customTypes.EditUserRequest, adm *customTypes.EditAdminRequest) (string, error) {
 
 	var result sql.Result
 	var err error
 
 	switch person {
-	case USER:
+	case customTypes.USER:
 		result, err = db.Exec(`UPDATE users SET FirstName = ?, LastName = ?, Email = ? WHERE UserID = ?`, usr.FirstName, usr.LastName, usr.Email, id)
-	case ADMIN:
+	case customTypes.ADMIN:
 		result, err = db.Exec(`UPDATE admins SET UserName = ?, Email = ? WHERE AdminID = ?`, adm.UserName, adm.Email, id)
 	default:
 		return "", errors.New("invalid person type")
@@ -110,18 +111,18 @@ func editPerson(person person, id string, usr *editUserRequest, adm *editAdminRe
 	return id, nil
 }
 
-func getMultiblePersons(person person, quantity int) (*[]user, *[]admin, error) {
+func GetMultiblePersons(person customTypes.Person, quantity int) (*[]customTypes.User, *[]customTypes.Admin, error) {
 
-	var adminList []admin
-	var userList []user
+	var adminList []customTypes.Admin
+	var userList []customTypes.User
 
 	var rows *sql.Rows
 	var err error
 
 	switch person {
-	case USER:
+	case customTypes.USER:
 		rows, err = db.Query(`SELECT UserID, FirstName, LastName, Email, Created FROM users LIMIT ?`, quantity)
-	case ADMIN:
+	case customTypes.ADMIN:
 		rows, err = db.Query(`SELECT AdminID, Email, UserName, Created FROM admins LIMIT ?`, quantity)
 	default:
 		return nil, nil, errors.New("invalid person type")
@@ -133,9 +134,9 @@ func getMultiblePersons(person person, quantity int) (*[]user, *[]admin, error) 
 
 	defer rows.Close()
 
-	if person == USER {
+	if person == customTypes.USER {
 		for rows.Next() {
-			var current user
+			var current customTypes.User
 
 			err := rows.Scan(&current.ID, &current.FirstName, &current.LastName, &current.Email, &current.Created)
 
@@ -149,9 +150,9 @@ func getMultiblePersons(person person, quantity int) (*[]user, *[]admin, error) 
 		return &userList, nil, nil
 	}
 
-	if person == ADMIN {
+	if person == customTypes.ADMIN {
 		for rows.Next() {
-			var current admin
+			var current customTypes.Admin
 
 			err := rows.Scan(&current.ID, &current.Email, &current.UserName, &current.Created)
 
@@ -169,7 +170,7 @@ func getMultiblePersons(person person, quantity int) (*[]user, *[]admin, error) 
 
 }
 
-func registerUser(usr registerUserRequest) error {
+func RegisterUser(usr customTypes.RegisterUserRequest) error {
 
 	var mail string
 
@@ -184,7 +185,7 @@ func registerUser(usr registerUserRequest) error {
 	}
 
 	// create new user
-	var newUser user
+	var newUser customTypes.User
 	var IDerr error
 	newUser.ID, IDerr = uuid.NewUUID()
 
@@ -220,9 +221,9 @@ func registerUser(usr registerUserRequest) error {
 	return err
 }
 
-func getUserByID(usrID string) (*user, error) {
+func GetUserByID(usrID string) (*customTypes.User, error) {
 
-	var usr user
+	var usr customTypes.User
 
 	err := db.QueryRow(`SELECT UserID, FirstName, LastName, Email, Created FROM users WHERE UserID = ?`, usrID).Scan(&usr.ID, &usr.FirstName, &usr.LastName, &usr.Email, &usr.Created)
 
@@ -237,17 +238,17 @@ func getUserByID(usrID string) (*user, error) {
 	return &usr, nil
 }
 
-func loginUser(usr loginUserRequest) (string, error) {
+func LoginUser(usr customTypes.LoginUserRequest) (string, error) {
 	query := `SELECT UserID, Password FROM users where email = ?`
-	return loginHelper(usr.Email, usr.Password, query)
+	return LoginHelper(usr.Email, usr.Password, query)
 }
 
-func loginAdmin(adm loginAdminRequest) (string, error) {
+func LoginAdmin(adm customTypes.LoginAdminRequest) (string, error) {
 	query := `SELECT AdminID, Password FROM admins where email = ?`
-	return loginHelper(adm.Email, adm.Password, query)
+	return LoginHelper(adm.Email, adm.Password, query)
 }
 
-func loginHelper(email, password, query string) (string, error) {
+func LoginHelper(email, password, query string) (string, error) {
 	var requiredPassword string
 	var userID string
 
@@ -270,9 +271,9 @@ func loginHelper(email, password, query string) (string, error) {
 	return userID, nil
 }
 
-func getAdminByID(admID string) (*admin, error) {
+func GetAdminByID(admID string) (*customTypes.Admin, error) {
 
-	var adm admin
+	var adm customTypes.Admin
 
 	err := db.QueryRow(`SELECT AdminID, Email, UserName, Created FROM admins WHERE AdminID = ?`, admID).Scan(&adm.ID, &adm.Email, &adm.UserName, &adm.Created)
 
@@ -287,15 +288,15 @@ func getAdminByID(admID string) (*admin, error) {
 	return &adm, nil
 }
 
-func deletePerson(person person, id string) error {
+func DeletePerson(person customTypes.Person, id string) error {
 
 	var result sql.Result
 	var err error
 
 	switch person {
-	case USER:
+	case customTypes.USER:
 		result, err = db.Exec(`DELETE FROM users WHERE UserID = ?`, id)
-	case ADMIN:
+	case customTypes.ADMIN:
 		result, err = db.Exec(`DELETE FROM admins WHERE AdminID = ?`, id)
 	default:
 		return errors.New("invalid person type")
@@ -318,13 +319,13 @@ func deletePerson(person person, id string) error {
 	return err
 }
 
-func searchPersons(person person, usrRequest *searchUserRequest, _ *searchAdminRequest) (*[]user, *[]admin, error) {
-	var userList []user
+func SearchPersons(person customTypes.Person, usrRequest *customTypes.SearchUserRequest, _ *customTypes.SearchAdminRequest) (*[]customTypes.User, *[]customTypes.Admin, error) {
+	var userList []customTypes.User
 
 	var rows *sql.Rows
 	var err error
 
-	if person == USER {
+	if person == customTypes.USER {
 		rows, err = db.Query(`SELECT UserID, FirstName, LastName, Email, Created FROM users WHERE UserId = ? OR LOWER(FirstName) LIKE ? OR LOWER(LastName) LIKE ? OR LOWER(Email) LIKE ?`, usrRequest.ID, "%"+strings.ToLower(usrRequest.FirstName)+"%", "%"+strings.ToLower(usrRequest.LastName)+"%", "%"+strings.ToLower(usrRequest.Email)+"%")
 	} else {
 		return nil, nil, errors.New("invalid person type")
@@ -336,9 +337,9 @@ func searchPersons(person person, usrRequest *searchUserRequest, _ *searchAdminR
 
 	defer rows.Close()
 
-	if person == USER {
+	if person == customTypes.USER {
 		for rows.Next() {
-			var current user
+			var current customTypes.User
 
 			err := rows.Scan(&current.ID, &current.FirstName, &current.LastName, &current.Email, &current.Created)
 
@@ -352,10 +353,10 @@ func searchPersons(person person, usrRequest *searchUserRequest, _ *searchAdminR
 		return &userList, nil, nil
 	}
 
-	return nil, nil, errors.New("unable to perform query " + err.Error())
+	return nil, nil, errors.New("unable to perform query")
 }
 
-func addAdmin(adm *addAdminRequest) (*admin, error) {
+func AddAdmin(adm *customTypes.AddAdminRequest) (*customTypes.Admin, error) {
 	var mail string
 
 	err := db.QueryRow(`SELECT Email FROM admins where Email = ?`, adm.Email).Scan(&mail)
@@ -369,7 +370,7 @@ func addAdmin(adm *addAdminRequest) (*admin, error) {
 	}
 
 	// create new admin
-	var newAdmin admin
+	var newAdmin customTypes.Admin
 	var IDerr error
 	newAdmin.ID, IDerr = uuid.NewUUID()
 

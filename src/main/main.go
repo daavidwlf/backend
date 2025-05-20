@@ -1,6 +1,8 @@
 package main
 
 import (
+	"backend/src/db"
+	"backend/src/server"
 	"log"
 	"os"
 
@@ -14,9 +16,10 @@ func main() {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	port := os.Getenv("BACKEND_PORT")
+	port_env := os.Getenv("BACKEND_PORT")
 
-	server := createServer(":" + port)
-	connectDB()
-	server.run()
+	port := server.CreateServer(":" + port_env)
+	db.ConnectDB()
+
+	server.Run(port)
 }
